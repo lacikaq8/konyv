@@ -84,7 +84,12 @@ main ()
                     <phrase>A <type>double **</type> háromszögmátrix a memóriában</phrase>
                 </textobject>
             </mediaobject>
-        </figure>                             
+        </figure>    
+         <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/4.1.png" scale="50" />
+                </imageobject>
+        </mediaobject>                             
         <para>
             Tanulságok, tapasztalatok, magyarázat...
         </para>            
