@@ -19,7 +19,18 @@
                 <filename>bhax/attention_raising/CUDA/mandelpngt.c++</filename>
             </link> nevű állománya.            
         </para>
-        <para>A Mandelbrot halmaz a komplex síkon</para>
+         <figure>
+            <title>A Mandelbrot halmaz a komplex síkon</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/alapmandel.png" scale="25" />
+                </imageobject>
+                <textobject>
+                    <phrase>A Mandelbrot halmaz a komplex síkon</phrase>
+                </textobject>
+            </mediaobject>
+        </figure>
+
         <para>
             A Mandelbrot halmazt 1980-ban találta meg Benoit Mandelbrot a 
             komplex számsíkon. Komplex számok azok a számok, amelyek körében 
@@ -81,7 +92,168 @@
             lesz a kép, hogy változatosan színezzük, például minél későbbi 
             z-nél lép ki a körből, annál sötétebbre). 
         </para>       
-        <para>        
+        <para>   
+		A kép kreálásához szükségünk lesz a png++ header fájlra amit a sudo apt -get install libpng++-dev parancsal
+		tudjk feltelepíteni és a g++ fordítónál szükségünk van a -lpng kapcsolóra.
+		<programlisting><![CDATA[ 
+// mandelpngt.c++
+// Copyright (C) 2019
+// Norbert Bátfai, batfai.norbert@inf.unideb.hu
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+//
+// Version history
+//
+//  Mandelbrot png
+//  Programozó Páternoszter/PARP
+//   https://www.tankonyvtar.hu/hu/tartalom/tamop412A/2011-0063_01_parhuzamos_prog_linux
+//
+//  https://youtu.be/gvaqijHlRUs
+//
+#include <iostream>
+#include "png++/png.hpp"
+#include <sys/times.h>
+]]></programlisting>
+Itt meghívjuk az általános header fájlokat itt az érdekesség a png++ és a sys/times a png++ azért importáljuk
+hogy tudjunk képet generálni és sys/times pedig hogy letödjuk mérni a futási időt a programnak.
+<programlisting><![CDATA[[
+#define MERET 600
+#define ITER_HAT 32000
+]]></programlisting>
+Létrehozunk 2 konstant értéket.
+<programlisting><![CDATA[[
+void
+mandel (int kepadat[MERET][MERET]) {
+
+    // Mérünk időt (PP 64)
+    clock_t delta = clock ();
+    // Mérünk időt (PP 66)
+    struct tms tmsbuf1, tmsbuf2;
+    times (&tmsbuf1);
+]]></programlisting>
+Itt mérjük az időt az elsőbe csak egy 4 jegyü számként a másodikba pedig 4 tizedes jegy pontosságig másodpercben.
+<programlisting><![CDATA[[
+    // számítás adatai
+    float a = -2.0, b = .7, c = -1.35, d = 1.35;
+    int szelesseg = MERET, magassag = MERET, iteraciosHatar = ITER_HAT;
+]]></programlisting>
+Ezen a rész adjuk meg a mandelbrot halmaz tulajdonságait.
+<programlisting><![CDATA[[
+    // a számítás
+    float dx = (b - a) / szelesseg;
+    float dy = (d - c) / magassag;
+    float reC, imC, reZ, imZ, ujreZ, ujimZ;
+    // Hány iterációt csináltunk?
+    int iteracio = 0;
+    // Végigzongorázzuk a szélesség x magasság rácsot:
+    for (int j = 0; j < magassag; ++j)
+    {
+        //sor = j;
+        for (int k = 0; k < szelesseg; ++k)
+        {
+            // c = (reC, imC) a rács csomópontjainak
+            // megfelelő komplex szám
+            reC = a + k * dx;
+            imC = d - j * dy;
+            // z_0 = 0 = (reZ, imZ)
+            reZ = 0;
+            imZ = 0;
+            iteracio = 0;
+            // z_{n+1} = z_n * z_n + c iterációk
+            // számítása, amíg |z_n| < 2 vagy még
+            // nem értük el a 255 iterációt, ha
+            // viszont elértük, akkor úgy vesszük,
+            // hogy a kiinduláci c komplex számra
+            // az iteráció konvergens, azaz a c a
+            // Mandelbrot halmaz eleme
+            while (reZ * reZ + imZ * imZ < 4 && iteracio < iteraciosHatar)
+            {
+                // z_{n+1} = z_n * z_n + c
+                ujreZ = reZ * reZ - imZ * imZ + reC;
+                ujimZ = 2 * reZ * imZ + imC;
+                reZ = ujreZ;
+                imZ = ujimZ;
+
+                ++iteracio;
+
+            }
+
+            kepadat[j][k] = iteracio;
+        }
+    }
+
+    times (&tmsbuf2);
+    std::cout << tmsbuf2.tms_utime - tmsbuf1.tms_utime
+              + tmsbuf2.tms_stime - tmsbuf1.tms_stime << std::endl;
+
+    delta = clock () - delta;
+    std::cout << (float) delta / CLOCKS_PER_SEC << " sec" << std::endl;
+
+}
+]]></programlisting>
+Itt folynak le számítások. Magát az értékeket 2 változóban kell tárolnunk mivel a programunk nem képes komplex számok
+feldolgozására.Miután feltöltöttük a tömbünket képadatokkal kiiratjuk a lefutási időt amiket a program elején hoztunk
+létre.
+<programlisting><![CDATA[[
+int
+main (int argc, char *argv[])
+{
+
+    if (argc != 2)
+    {
+        std::cout << "Hasznalat: ./mandelpng fajlnev";
+        return -1;
+    }
+
+    int kepadat[MERET][MERET];
+
+    mandel(kepadat);
+
+    png::image < png::rgb_pixel > kep (MERET, MERET);
+
+    for (int j = 0; j < MERET; ++j)
+    {
+        //sor = j;
+        for (int k = 0; k < MERET; ++k)
+        {
+            kep.set_pixel (k, j,
+                           png::rgb_pixel (255 -
+                                           (255 * kepadat[j][k]) / ITER_HAT,
+                                           255 -
+                                           (255 * kepadat[j][k]) / ITER_HAT,
+                                           255 -
+                                           (255 * kepadat[j][k]) / ITER_HAT));
+        }
+    }
+
+    kep.write (argv[1]);
+    std::cout << argv[1] << " mentve" << std::endl;
+
+}
+		]]></programlisting> 
+A mainbe van egy ellenőrző hogy ha nem 2 argomentumot kap a consoloból akkor hibát ír ki és kiprinteli hogy kell
+futtatni.A második részben töltjük fel az üres png-et a kiszámolt pixel színekkel.
+		<mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/mandel2019.png" scale="50" />
+                </imageobject>
+        </mediaobject> 
+        <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/mandelkep.png" scale="50" />
+                </imageobject>
+        </mediaobject>     
         </para>
 
             
@@ -104,7 +276,7 @@ ismert algoritmust valósítja meg a repó <link xlink:href="../../../bhax/atten
                 <filename>bhax/attention_raising/Mandelbrot/3.1.2.cpp</filename>
             </link> nevű állománya.
         </para>
-        
+        <para>
         <programlisting language="c++">
 <![CDATA[// Verzio: 3.1.2.cpp
 // Forditas:
@@ -137,7 +309,11 @@ ismert algoritmust valósítja meg a repó <link xlink:href="../../../bhax/atten
 #include <iostream>
 #include "png++/png.hpp"
 #include <complex>
-
+]]></programlisting>
+Mint mindig elején include-oljuk a header fájlokat.Ami itt újnak tűnhet az a complex header ez annyit 
+tesz lehetővé hogy a programunk képes legyen komplex számok feldolgozására így nem kell 2 változóként 
+mentenünk a számokat hanem csak elég egybe.
+<programlisting><![CDATA[[
 int
 main ( int argc, char *argv[] )
 {
@@ -165,14 +341,21 @@ main ( int argc, char *argv[] )
       std::cout << "Hasznalat: ./3.1.2 fajlnev szelesseg magassag n a b c d" << std::endl;
       return -1;
     }
-
+]]></programlisting>
+Mint az előző feladatban itt megtaláljuk a mandelbrot halmazunk értékeit csak annyi a különbség hogy a felhasználó
+megadhatja az attribútum értékeket de nem muszály mert ha nem adunk meg semmit akkor az alamértelmezett számokkal fut le.
+Meg persze van egy ellenőrző hogy ha több vagy kevesebb argomentumot ad meg a felhasználó akkor hibát dob ki és ki írja
+hogyan kéne futtatni.
+<programlisting><![CDATA[[
   png::image < png::rgb_pixel > kep ( szelesseg, magassag );
 
   double dx = ( b - a ) / szelesseg;
   double dy = ( d - c ) / magassag;
   double reC, imC, reZ, imZ;
   int iteracio = 0;
-
+]]></programlisting>
+Itt hozzuk létre az öres png-t és létrehozzuk az iteracio számlálót.
+<programlisting><![CDATA[[
   std::cout << "Szamitas\n";
 
   // j megy a sorokon
@@ -213,7 +396,21 @@ main ( int argc, char *argv[] )
 
 }
 ]]>
-        </programlisting>        
+        </programlisting>    
+    Ebben a részben hasznláljuk elsőnek a double-ket amik tartalmazzák a szám valódi alakját 
+    és az imaginárius alakját.Ennek köszönve tudjuk létrehozni a a c és a z_n változókat.Ezután számoljuk
+    ki a c esetén a z_n-eket, és ha elérjük az iterációs határt akkor, tudhatjuk, hogy az iteráció konvergens.
+    <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/mandelcomplexfut.png" scale="50" />
+                </imageobject>
+        </mediaobject> 
+    <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/mandelcomplex.png" scale="50" />
+                </imageobject>
+        </mediaobject> 
+    </para>
     </section>           
                 
     <section>
@@ -296,7 +493,8 @@ main ( int argc, char *argv[] )
             korábbi <link xlink:href="#bhax-textbook-feladatok-mandelbrot.Mandelbrot">Mandelbrot halmazt</link> kiszámoló 
             forrásunkat módosítjuk. Viszont a program változóinak elnevezését összhangba hozzuk a közlemény jelöléseivel:
         </para>       
-        <programlisting language="c++">
+<para>
+<programlisting language="c++">
 <![CDATA[// Verzio: 3.1.3.cpp
 // Forditas:
 // g++ 3.1.3.cpp -lpng -O3 -o 3.1.3
@@ -365,6 +563,12 @@ main ( int argc, char *argv[] )
         std::cout << "Hasznalat: ./3.1.2 fajlnev szelesseg magassag n a b c d reC imC R" << std::endl;
         return -1;
     }
+    ]]></programlisting>
+    A programunk eleje megegyezik a mandelbrotos programunkal csak annyiban tér el hogy a felhasználótól kérük be
+    a cc konstans értékét és a különbszámot.Van 10 db parancssorban argomentumunk amit a felhasználónk tud megadni
+    de ha nem ad meg semmit akkor az alapértelmezett értékeket használja fel a program.Az else akkor fog kiíródni
+    ha nem megfelelően adjuk meg az értékeket ekkor a program is le áll.
+    <programlisting><![CDATA[
 
     png::image < png::rgb_pixel > kep ( szelesseg, magassag );
 
@@ -372,7 +576,9 @@ main ( int argc, char *argv[] )
     double dy = ( ymax - ymin ) / magassag;
 
     std::complex<double> cc ( reC, imC );
-
+]]></programlisting>
+	Ebben a részben hozzunk létre egy üres pnt-t, a lépésközt a rácsok között a cc számmal fogjuk számolni.
+ <programlisting><![CDATA[
     std::cout << "Szamitas\n";
 
     // j megy a sorokon
@@ -414,8 +620,21 @@ main ( int argc, char *argv[] )
 }
 ]]>
         </programlisting>                                 
-                                          
-                                                                            
+A két egymásba lévő for ciklussal végigmegyünk a rácspontokon és egy harmadik for ciklussal kiszámoljuk
+a függvényértéket, addig amíl el nem érjük az iterációs határt.
+	<programlisting><![CDATA[if(std::real ( z_n ) > R || std::imag ( z_n ) > R)]]></programlisting>
+	Ez volt a bugos kódcsipet amit Clifford Pickover programja tartalmazott.
+    <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/biocommand.png" scale="50" />
+                </imageobject>
+    </mediaobject>
+    <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/biomandel.png" scale="50" />
+                </imageobject>
+    </mediaobject>
+</para>                        
     </section>                                       
 
     <section>
@@ -431,6 +650,196 @@ main ( int argc, char *argv[] )
                 <filename>bhax/attention_raising/CUDA/mandelpngc_60x60_100.cu</filename>
             </link> nevű állománya.            
         </para>
+    <programlisting><![CDATA[[
+// mandelpngc_60x60_100.cu
+// Copyright (C) 2019
+// Norbert Bátfai, batfai.norbert@inf.unideb.hu
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+//
+// Version history
+//
+//  Mandelbrot png
+//  Programozó Páternoszter/PARP
+//   https://www.tankonyvtar.hu/hu/tartalom/tamop412A/2011-0063_01_parhuzamos_prog_linux
+//
+//  https://youtu.be/gvaqijHlRUs
+//
+
+#include <png++/image.hpp>
+#include <png++/rgb_pixel.hpp>
+
+#include <sys/times.h>
+#include <iostream>
+
+
+#define MERET 600
+#define ITER_HAT 32000
+
+__device__ int
+mandel (int k, int j)
+{
+  // Végigzongorázza a CUDA a szélesség x magasság rácsot:
+  // most eppen a j. sor k. oszlopaban vagyunk
+
+  // számítás adatai
+  float a = -2.0, b = .7, c = -1.35, d = 1.35;
+  int szelesseg = MERET, magassag = MERET, iteraciosHatar = ITER_HAT;
+
+  // a számítás
+  float dx = (b - a) / szelesseg;
+  float dy = (d - c) / magassag;
+  float reC, imC, reZ, imZ, ujreZ, ujimZ;
+  // Hány iterációt csináltunk?
+  int iteracio = 0;
+
+  // c = (reC, imC) a rács csomópontjainak
+  // megfelelő komplex szám
+  reC = a + k * dx;
+  imC = d - j * dy;
+  // z_0 = 0 = (reZ, imZ)
+  reZ = 0.0;
+  imZ = 0.0;
+  iteracio = 0;
+  // z_{n+1} = z_n * z_n + c iterációk
+  // számítása, amíg |z_n| < 2 vagy még
+  // nem értük el a 255 iterációt, ha
+  // viszont elértük, akkor úgy vesszük,
+  // hogy a kiinduláci c komplex számra
+  // az iteráció konvergens, azaz a c a
+  // Mandelbrot halmaz eleme
+  while (reZ * reZ + imZ * imZ < 4 && iteracio < iteraciosHatar)
+    {
+      // z_{n+1} = z_n * z_n + c
+      ujreZ = reZ * reZ - imZ * imZ + reC;
+      ujimZ = 2 * reZ * imZ + imC;
+      reZ = ujreZ;
+      imZ = ujimZ;
+
+      ++iteracio;
+
+    }
+  return iteracio;
+}
+
+
+/*
+__global__ void
+mandelkernel (int *kepadat)
+{
+
+  int j = blockIdx.x;
+  int k = blockIdx.y;
+
+  kepadat[j + k * MERET] = mandel (j, k);
+
+}
+*/
+
+__global__ void
+mandelkernel (int *kepadat)
+{
+
+  int tj = threadIdx.x;
+  int tk = threadIdx.y;
+
+  int j = blockIdx.x * 10 + tj;
+  int k = blockIdx.y * 10 + tk;
+
+  kepadat[j + k * MERET] = mandel (j, k);
+
+}
+
+void
+cudamandel (int kepadat[MERET][MERET])
+{
+
+  int *device_kepadat;
+  cudaMalloc ((void **) &device_kepadat, MERET * MERET * sizeof (int));
+
+  // dim3 grid (MERET, MERET);
+  // mandelkernel <<< grid, 1 >>> (device_kepadat);
+  
+  dim3 grid (MERET / 10, MERET / 10);
+  dim3 tgrid (10, 10);
+  mandelkernel <<< grid, tgrid >>> (device_kepadat);  
+  
+  cudaMemcpy (kepadat, device_kepadat,
+	      MERET * MERET * sizeof (int), cudaMemcpyDeviceToHost);
+  cudaFree (device_kepadat);
+
+}
+
+int
+main (int argc, char *argv[])
+{
+
+  // Mérünk időt (PP 64)
+  clock_t delta = clock ();
+  // Mérünk időt (PP 66)
+  struct tms tmsbuf1, tmsbuf2;
+  times (&tmsbuf1);
+
+  if (argc != 2)
+    {
+      std::cout << "Hasznalat: ./mandelpngc fajlnev";
+      return -1;
+    }
+
+  int kepadat[MERET][MERET];
+
+  cudamandel (kepadat);
+
+  png::image < png::rgb_pixel > kep (MERET, MERET);
+
+  for (int j = 0; j < MERET; ++j)
+    {
+      //sor = j;
+      for (int k = 0; k < MERET; ++k)
+	{
+	  kep.set_pixel (k, j,
+			 png::rgb_pixel (255 -
+					 (255 * kepadat[j][k]) / ITER_HAT,
+					 255 -
+					 (255 * kepadat[j][k]) / ITER_HAT,
+					 255 -
+					 (255 * kepadat[j][k]) / ITER_HAT));
+	}
+    }
+  kep.write (argv[1]);
+
+  std::cout << argv[1] << " mentve" << std::endl;
+
+  times (&tmsbuf2);
+  std::cout << tmsbuf2.tms_utime - tmsbuf1.tms_utime
+    + tmsbuf2.tms_stime - tmsbuf1.tms_stime << std::endl;
+
+  delta = clock () - delta;
+  std::cout << (float) delta / CLOCKS_PER_SEC << " sec" << std::endl;
+
+}
+		]]> </programlisting>
+    <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/cudavscpu.png" scale="50" />
+                </imageobject>
+    </mediaobject>
+    <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/cpuvscudamandel.png" scale="35" />
+                </imageobject>
+    </mediaobject>
     </section>                 
 
    <section>
@@ -445,6 +854,39 @@ main ( int argc, char *argv[] )
         <para>
             Megoldás forrása: <link xlink:href=""></link>
         </para>
+        <programlisting><![CDATA[[ 
+		
+		]]></programlisting>
+         <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/cppnagy1.png" scale="65" />
+                </imageobject>
+    </mediaobject>
+     <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/zoomcpp.png" scale="65" />
+                </imageobject>
+    </mediaobject>
+     <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/cppnagy2.png" scale="65" />
+                </imageobject>
+    </mediaobject>
+     <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/cppnagy3.png" scale="65" />
+                </imageobject>
+    </mediaobject>
+     <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/cppnagy4.png" scale="65" />
+                </imageobject>
+    </mediaobject>
+    <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/cppnagy5.png" scale="65" />
+                </imageobject>
+    </mediaobject>
     </section>                
                                                                                                                                                                             
     <section>
@@ -458,6 +900,21 @@ main ( int argc, char *argv[] )
         <para>
             Megoldás forrása: <link xlink:href="https://www.tankonyvtar.hu/hu/tartalom/tkt/javat-tanitok-javat/apbs02.html#id570518">https://www.tankonyvtar.hu/hu/tartalom/tkt/javat-tanitok-javat/apbs02.html#id570518</link>
         </para>
+        <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/javanagy1.png" scale="65" />
+                </imageobject>
+		</mediaobject>
+		<mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/javanagy2.png" scale="65" />
+                </imageobject>
+		</mediaobject>
+		<mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/javanagy3.png" scale="65" />
+                </imageobject>
+		</mediaobject>
     </section>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
 </chapter>                
