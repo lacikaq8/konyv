@@ -855,6 +855,20 @@ main (int argc, char *argv[])
             Megoldás forrása: <link xlink:href=""></link>
         </para>
         <para>
+A program a QT GUI-t használja, ennek segítségével tudjuk elkészíteni a Mandelbrot halmazt beutazó
+programunkat. Ez a GUI az egyik legertejedtebb garfikus interfésze a C++-nak, rengeteg tutorial van róla
+fent a neten.
+</para>
+<para>
+Fordítás: Az szükséges 4 fájlnak egy mappában kell lennie. A mappában futtatni kell a qmake -project
+parancsot. Ez létre fog hozni egy *.pro fájlt. Ebbe a fájlba be kell írni a következőt: QT += widgets
+sort. Ezután futtatni kell a qmake *.pro. Ezután lesz a mappában egy Makefile, ezt kell majd hasz-
+nálni. Ki adjuk a make parancsot, mely létrehoz egy bináris fájlt. Ezt pedig a szokásos módon futtatjuk.
+Ahhoz, hogy részletesebb képet kapj a ránagyított területről, az "n" billentyűt kell lenyomnod, mely kiszá-
+molja a z-ket a megadott területen. Ahogy folyamatosan nagyítjuk, észre vehetjük, hogy a újra meg újra
+Mandelbrot halmazokat kapunk.
+		</para>
+        <para>
 		Main.cpp
         <programlisting><![CDATA[
 		// main.cpp
