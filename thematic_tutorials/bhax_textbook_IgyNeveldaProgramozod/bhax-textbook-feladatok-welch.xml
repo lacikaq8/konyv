@@ -22,7 +22,162 @@
         <para>
             Tanulságok, tapasztalatok, magyarázat... térj ki arra is, hogy a JDK forrásaiban a Sun programozói
             pont úgy csinálták meg ahogyan te is, azaz az OO nemhogy nem nehéz, hanem éppen természetes neked!
-        </para>                
+        </para> 
+        <para>    
+        <programlisting><![CDATA[
+#include <iostream>
+#include <cstdlib>	
+#include <cmath>	
+#include <ctime>	
+
+
+//Random osztály
+class PolarGen {
+
+	public:
+
+		PolarGen(); //konstruktor
+
+		~PolarGen(){} //destruktor
+
+		double kovetkezo(); //random lekérés
+
+	private:
+
+		bool nincsTarolt;
+		double tarolt; //random értéke
+
+};
+]]></programlisting>
+Include-oljuk a szükséges osztályokat ami újnak tűnhetnek azok a cmath és ctime az elsőbe a nevéből eredően
+matematikai műveleteket importálunk a ctime-al le lehet kérni a rendszeridőt meg dátum formátumot átlehet alakítani
+string formátumba. Most hogy átnéztük a header-öket lássunk is bele mi a public és a private között a különbség
+.A public-ba írt tagok elérhetőek a class-on kívül is ellentéte a private meg csak a classon belül érhetőek el.
+A konstruktor az egy olyan függvény ami csak akkor megy végbe amikor létrehozzunk a PolarGen tipusú objektumokat.
+Ez az állítás a destruktorra is igaz csak ez a program végén fut le.
+<programlisting><![CDATA[
+PolarGen::PolarGen() { //a konstruktor kifejtése
+	nincsTarolt = false;
+	std::srand (std::time(NULL)); //random inicializálás
+};
+
+]]></programlisting>
+Ebbe a konstruktorba adunk egy alap értéket a nincsTarolt és meghívjuk a srand() függvényt ami generál 
+egy random számot.
+<programlisting><![CDATA[
+double PolarGen::kovetkezo() { //random lekérő függvény kifejtése
+	if (nincsTarolt)
+{
+		double u1, u2, v1, v2, w;
+
+		do{
+			u1 = std::rand () / (RAND_MAX + 1.0); //innentől jön az algoritmus
+			u2 = std::rand () / (RAND_MAX + 1.0);
+			v1 = 2 * u1 - 1;
+			v2 = 2 * u2 - 1;
+			w = v1 * v1 + v2 * v2;
+		    }
+		while (w > 1);
+
+		double r = std::sqrt ((-2 * std::log (w)) / w);
+
+		tarolt = r * v2; 
+		nincsTarolt = !nincsTarolt;
+
+		return r * v1; //idáig tart az algoritmus
+	}
+	
+	else
+	{
+		nincsTarolt = !nincsTarolt; //ha van korábbi random érték, akkor azt adja vissza
+		return tarolt;
+	}
+};    
+
+]]></programlisting>
+A kovetkezo() függvényünkbe van egy algoritmus mellyel ellenőrizzók hogy van-e tárolt random számunk
+ha nincs létrehozzunk 2-őt az egyiket visszaadjuk a másikat eltároljuk.
+<programlisting><![CDATA[
+int main() 
+{
+
+	PolarGen rnd;
+
+	for (int i = 0; i < 10; ++i) std::cout << rnd.kovetkezo() << std::endl; //10 random szám generálása
+
+}
+        ]]></programlisting> 
+        A mainbe létrehozzuk a PolarGen típusú változót és létrehozunk 10 random számot.
+         <figure>
+            <title>C++ Run</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/6/6.1.run.png" scale="60" />
+                </imageobject>
+                <textobject>
+                    <phrase>C++ Run</phrase>
+                </textobject>
+            </mediaobject>
+    </figure>
+        <programlisting><![CDATA[
+public class PolarGenerator
+{
+    boolean nincsTarolt = true;
+    double tarolt;
+    
+    public PolarGenerator()
+    {
+        nincsTarolt = true;
+    }
+    
+    public double kovetkezo() 
+    {
+        if(nincsTarolt)
+        {
+            double u1, u2, v1, v2, w;
+            do{
+                u1 = Math.random();
+                u2 = Math.random();
+                v1 = 2* u1 -1;
+                v2 = 2* u2 -1;
+                w = v1*v1 + v2*v2;
+            } while (w>1);
+            
+            double r = Math.sqrt((-2 * Math.log(w) / w));
+            tarolt = r * v2;
+            nincsTarolt = !nincsTarolt;
+            return r * v1;
+        }
+        else
+        {
+            nincsTarolt = !nincsTarolt;
+            return tarolt;
+        }
+    }
+    
+    public static void main(String[] args)
+    {
+        PolarGenerator g = new PolarGenerator();
+        for (int i = 0; i < 10; ++i)
+        {
+            System.out.println(g.kovetkezo());
+        }
+    }
+}
+		]]></programlisting> 
+        </para> 
+       
+    <figure>
+            <title>Java Run</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/6/6.1.run.java.png" scale="60" />
+                </imageobject>
+                <textobject>
+                    <phrase>Java Run</phrase>
+                </textobject>
+            </mediaobject>
+    </figure>         
     </section>        
 
     <section>
@@ -36,6 +191,246 @@
         <para>
             Megoldás forrása:                
         </para>
+        <para>
+			<programlisting language ="c">
+            <![CDATA[
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <math.h>
+
+typedef struct binfa
+{
+  int ertek;
+  struct binfa *bal_nulla;
+  struct binfa *jobb_egy;
+
+} BINFA, *BINFA_PTR;
+
+]]></programlisting>
+A header-öket nem is magyarázom mert már ismerjük őket. Elsőnek amit látunk létrehozunk egy struktúrát binfa
+néven ami tartalmaz 3 értéket a bal és jobb gyermekét és a gyermekekre mutató mutatót.
+<programlisting><![CDATA[
+BINFA_PTR
+uj_elem ()
+{
+  BINFA_PTR p;
+
+  if ((p = (BINFA_PTR) malloc (sizeof (BINFA))) == NULL)
+    {
+      perror ("memoria");
+      exit (EXIT_FAILURE);
+    }
+  return p;
+}
+
+]]></programlisting>
+Az uh_elem() függvény az foglal egy helyet a BINFA tipusú változónak majd a return-be visszaadunk egy üres
+területre mutató pointert.
+<programlisting><![CDATA[
+extern void kiir (BINFA_PTR elem);
+extern void ratlag (BINFA_PTR elem);
+extern void rszoras (BINFA_PTR elem);
+extern void szabadit (BINFA_PTR elem);
+]]></programlisting>
+Deklarálunk nehány statisztikára használható függvényt.
+<programlisting><![CDATA[
+int
+main (int argc, char **argv)
+{
+  char b;
+
+  BINFA_PTR gyoker = uj_elem ();
+  gyoker->ertek = '/';
+  gyoker->bal_nulla = gyoker->jobb_egy = NULL;
+  BINFA_PTR fa = gyoker;
+
+]]></programlisting>
+Itt létrehozzuk a gyökeret a győkér értéket per jelre állítjuk és a bal és jobb gyereket null-ra állítjuk
+mivel még üres a fánk és vegül a fa mutatót a gyökérre állítjuk.
+<programlisting><![CDATA[
+  while (read (0, (void *) &b, 1))
+    {
+//      write (1, &b, 1);
+      if (b == '0')
+	{
+	  if (fa->bal_nulla == NULL)
+	    {
+	      fa->bal_nulla = uj_elem ();
+	      fa->bal_nulla->ertek = 0;
+	      fa->bal_nulla->bal_nulla = fa->bal_nulla->jobb_egy = NULL;
+	      fa = gyoker;
+	    }
+	  else
+	    {
+	      fa = fa->bal_nulla;
+	    }
+	}
+      else
+	{
+	  if (fa->jobb_egy == NULL)
+	    {
+	      fa->jobb_egy = uj_elem ();
+	      fa->jobb_egy->ertek = 1;
+	      fa->jobb_egy->bal_nulla = fa->jobb_egy->jobb_egy = NULL;
+	      fa = gyoker;
+	    }
+	  else
+	    {
+	      fa = fa->jobb_egy;
+	    }
+	}
+    }
+]]></programlisting>
+A while cuklusban hozzuk létre a binfákat. A standard inputól fogadjuk a bemenetet bitenként. Ha a bemenet 0, akkor megnézzük
+hogy van-e nullás gyermeke ha nincs a akkor kreálunk egyet és a fa mutatót visszaállítjuk a gyökérre.Ha a bemenet nem 0 akkor ellenőrizzük
+hogy van jobb oldali gyermeke ha nincs létrehozzuk és ismét a fa mutatót visszaállítjuk a gyökérre de ha van akkor a mutató a jobb oldali
+gyermekre fog mutatni. 
+<programlisting><![CDATA[
+  printf ("\n");
+  kiir (gyoker);
+  
+  extern int max_melyseg, atlagosszeg, melyseg, atlagdb;
+  extern double szorasosszeg, atlag;
+
+
+ 
+
+  printf ("melyseg=%d\n", max_melyseg-1);
+
+  /* Átlagos ághossz kiszámítása */
+  atlagosszeg = 0;
+  melyseg = 0;
+  atlagdb = 0;
+  ratlag (gyoker);
+  // atlag = atlagosszeg / atlagdb;
+  // (int) / (int) "elromlik", ezért casoljuk
+  // K&R tudatlansági védelem miatt a sok () :)
+  atlag = ((double)atlagosszeg) / atlagdb;
+
+  /* Ághosszak szórásának kiszámítása */
+  atlagosszeg = 0;
+  melyseg = 0;
+  atlagdb = 0;
+  szorasosszeg = 0.0;
+
+  rszoras (gyoker);
+
+  double szoras = 0.0;
+
+  if (atlagdb - 1 > 0)
+    szoras = sqrt( szorasosszeg / (atlagdb - 1));
+  else
+    szoras = sqrt (szorasosszeg);
+
+  printf ("altag=%f\nszoras=%f\n", atlag, szoras);
+
+  szabadit (gyoker);
+}
+
+]]></programlisting>
+A mainbe létrehozunk egy pár változót amibe statisztikai adatokat fogunk tárolni.
+<programlisting><![CDATA[
+int atlagosszeg = 0, melyseg = 0, atlagdb = 0;
+
+void
+ratlag (BINFA_PTR fa)
+{
+
+  if (fa != NULL)
+    {
+      ++melyseg;
+      ratlag (fa->jobb_egy);
+      ratlag (fa->bal_nulla);
+      --melyseg;
+
+      if (fa->jobb_egy == NULL && fa->bal_nulla == NULL)
+	{
+
+	  ++atlagdb;
+	  atlagosszeg += melyseg;
+
+	}
+
+    }
+
+}
+]]></programlisting>
+Itt a fa átlagját számoljuk ki.
+<programlisting><![CDATA[
+
+ // a Javacska ONE projekt Hetedik Szem/TudatSzamitas.java mintajara
+ // http://sourceforge.net/projects/javacska/ 
+ // az atlag() hivasakor is inicializalni kell oket, a
+ // a rekurziv bejaras hasznalja
+double szorasosszeg = 0.0, atlag = 0.0;
+
+void
+rszoras (BINFA_PTR fa)
+{
+
+  if (fa != NULL)
+    {
+      ++melyseg;
+      rszoras (fa->jobb_egy);
+      rszoras (fa->bal_nulla);
+      --melyseg;
+
+      if (fa->jobb_egy == NULL && fa->bal_nulla == NULL)
+	{
+
+	  ++atlagdb;
+	  szorasosszeg += ((melyseg - atlag) * (melyseg - atlag));
+
+	}
+
+    }
+
+}
+]]></programlisting>
+Itt meg a szórást.
+<programlisting><![CDATA[
+//static int melyseg = 0;
+int max_melyseg = 0;
+
+void
+kiir (BINFA_PTR elem)
+{
+  if (elem != NULL)
+    {
+      ++melyseg;
+      if (melyseg > max_melyseg)
+	max_melyseg = melyseg;
+      kiir (elem->jobb_egy);
+      // ez a postorder bejáráshoz képest
+      // 1-el nagyobb mélység, ezért -1
+      for (int i = 0; i < melyseg; ++i)
+	printf ("---");
+      printf ("%c(%d)\n", elem->ertek < 2 ? '0' + elem->ertek : elem->ertek,
+	      melyseg-1);
+      kiir (elem->bal_nulla);
+      --melyseg;
+    }
+}
+]]></programlisting>
+A kiír segítségével fogjuk a fánkat kiírni standard outputra most inorder bejárást fogunk használni.
+<programlisting><![CDATA[
+void
+szabadit (BINFA_PTR elem)
+{
+  if (elem != NULL)
+    {
+      szabadit (elem->jobb_egy);
+      szabadit (elem->bal_nulla);
+      free (elem);
+    }
+}
+
+            ]]>
+        </programlisting>
+        Szabadít rész a programunk destruktora.A lefoglalt tárterületet a free() függvényel szabadítjuk fel.De mielőtt a
+        szülőtt eltávolítjuk előtte a gyerekeket kell persz.
+		</para>
     </section>        
         
     <section>
@@ -48,6 +443,51 @@
         </para>
         <para>
             Megoldás forrása:                
+        </para>
+        
+        <para>
+		<emphasis role="bold">Posztorder Bejárás</emphasis>
+        <programlisting><![CDATA[
+void
+kiir (BINFA_PTR elem)
+{
+  if (elem != NULL)
+    {
+      ++melyseg;
+      if (melyseg > max_melyseg)
+	max_melyseg = melyseg;
+      kiir (elem->jobb_egy);
+      kiir (elem-> bal_nulla)
+      for (int i = 0; i < melyseg; ++i)
+	printf ("---");
+      printf ("%c(%d)\n", elem->ertek < 2 ? '0' + elem->ertek : elem->ertek,melyseg-1);
+      --melyseg;
+    }
+}
+        ]]></programlisting>
+        <emphasis role="bold">Preorder Bejárás</emphasis>
+        <programlisting><![CDATA[
+void
+kiir (BINFA_PTR elem)
+{
+if (elem != NULL)
+{
+++melyseg;
+if (melyseg > max_melyseg)
+max_melyseg = melyseg;
+for (int i = 0; i < melyseg; ++i)
+printf ("---");
+printf ("%c(%d)\n", elem->ertek < 2 ? ’0’ + elem->ertek : elem->ertek ←-
+,
+melyseg-1);
+kiir (elem->jobb_egy);
+// ez a postorder bejáráshoz képest
+// 1-el nagyobb mélység, ezért -1
+kiir (elem->bal_nulla);
+--melyseg;
+}
+}
+        ]]></programlisting>
         </para>
     </section>        
                         
@@ -62,7 +502,7 @@
         </para>
         <para>
             Megoldás forrása:                
-        </para>
+        </para> 
     </section>        
                 
     <section>
@@ -91,6 +531,376 @@
         <para>
             Megoldás forrása:  
         </para>
+        <para>
+		6.4-6.6
+		<programlisting><![CDATA[
+#include <iostream>
+
+template <typename ValueType>
+class BinTree {
+
+protected:
+    class Node {
+        
+    private:
+        ValueType value;
+        Node *left;
+        Node *right;
+        int count{0};
+        
+        // TODO rule of five
+        Node(const Node &);
+        Node & operator=(const Node &);
+        Node(Node &&);
+        Node & operator=(Node &&);
+        
+    public:
+        Node(ValueType value): value(value), left(nullptr), right(nullptr) {}
+        ValueType getValue(){return value;}
+        Node * leftChild(){return left;}
+        Node * rightChild(){return right;}
+        void leftChild(Node * node){left = node;}
+        void rightChild(Node * node){right = node;}
+        int getCount(){return count;}
+        void incCount(){++count;}        
+    };
+
+    Node *root;
+    Node *treep;    
+    int depth{0};
+]]></programlisting>
+Elsőnek includeoljuk az iostream-et utána létrehozunk egy template osztályt aminek adunk egy ValueType tipus paramétert amire
+a nodokba lévő értékekre mutatunk.Protected részbe csinálunk egy node osztályt. Private részben definiáljuk a ValueType-unkat value-re
+létrehozunk a bal és jobb gyermekre pointereket és létrehozunk egy számlálót "programozó pukkasztó" stílusban.
+TODO résznél felvesszük a Node másoló konstruktort ami kap egy konstants referenciát és ezt eljátszuk mégegyszer a jobb gyermek referenciára is.
+A public elsőnek megírjuk a node konstu ktorát aminek megadjuk a value értékét tipust a bal és jobb gyermeket.
+Csinálunk egy node gyökér mutaót és egy treep mutatót plusz egy mélység számlálót.
+<programlisting><![CDATA[
+private:     
+    // TODO rule of five
+    BinTree(const BinTree &);
+    BinTree & operator=(const BinTree &);
+    BinTree(const BinTree &&);
+    BinTree & operator=(const BinTree &&);
+    
+public:
+    BinTree(Node *root = nullptr, Node *treep = nullptr): root(root), treep(treep) {}
+    ~BinTree(){
+        deltree(root);
+    }
+    BinTree & operator<<(ValueType value);
+    void print(){print(root, std::cout);}
+    void print(Node *node, std::ostream & os);
+    void deltree(Node *node); 
+
+};
+
+]]></programlisting>
+Privátban újra elvégezzük amit részleteztem csak a BinTree -re.
+Publicban BinTree nek megadunk 2 alapértelmezett értéket és root-ba berakom a root pointert és így járok el a treep-el is.
+Példűnyosítjuk a BinTree-t és a destruktorát.
+
+<programlisting><![CDATA[
+template <typename ValueType>
+class ZLWTree : public BinTree<ValueType> {
+
+public:
+    ZLWTree(): BinTree<ValueType>(new typename BinTree<ValueType>::Node('/')) {
+        this->treep = this->root;
+    }
+    ZLWTree & operator<<(ValueType value);
+    
+    
+};
+]]></programlisting>
+Itt megadjuk hogy a fát / jellel legyen feldarabolva
+<programlisting><![CDATA[
+
+template <typename ValueType>
+BinTree<ValueType> & BinTree<ValueType>::operator<<(ValueType value)
+{
+    if(!treep) {
+       
+        root = treep = new Node(value);
+        
+    } else if (treep->getValue() == value) {
+        
+        treep->incCount();
+        
+    } else if (treep->getValue() > value) {
+        
+        if(!treep->leftChild()) {
+            
+            treep->leftChild(new Node(value));
+            
+        } else {
+            
+            treep = treep->leftChild();
+            *this << value;
+        }
+        
+    } else if (treep->getValue() < value) {
+        
+        if(!treep->rightChild()) {
+            
+            treep->rightChild(new Node(value));
+            
+        } else {
+            
+            treep = treep->rightChild();
+            *this << value;
+        }
+        
+    }
+    
+    treep = root;
+    
+    return *this;
+}
+
+]]></programlisting>
+Itt van a binfa feltöltésa ami röviden megnézi hogy van e a node-nak bal vagy jobb gyereke ha nincs csinál ha meg van
+akkor továbblépünk.
+<programlisting><![CDATA[
+template <typename ValueType>
+ZLWTree<ValueType> & ZLWTree<ValueType>::operator<<(ValueType value)
+{
+    
+    if(value == '0') {
+        
+        if(!this->treep->leftChild()) {
+            
+            typename BinTree<ValueType>::Node * node = new typename BinTree<ValueType>::Node(value);
+            this->treep->leftChild(node);
+            this->treep = this->root;
+            
+        } else {
+            
+            this->treep = this->treep->leftChild(); 
+        }
+        
+    } else {
+
+        if(!this->treep->rightChild()) {
+            
+            typename BinTree<ValueType>::Node * node = new typename BinTree<ValueType>::Node(value);
+            this->treep->rightChild(node);
+            this->treep = this->root;
+            
+        } else {
+            
+            this->treep = this->treep->rightChild(); 
+        }
+        
+    }
+    
+    return *this;
+}
+]]></programlisting>
+Itt ismét a gyermekek létezését vizsgáljuk.
+<programlisting><![CDATA[
+template <typename ValueType>
+void BinTree<ValueType>::print(Node *node, std::ostream & os) 
+{
+    if(node)
+    {
+        ++depth;
+        print(node->leftChild(), os);
+        
+        for(int i{0}; i<depth; ++i)
+            os << "---";            
+        os << node->getValue() << " " << depth << " " << node->getCount() << std::endl;     
+        
+        print(node->rightChild(), os);
+        --depth;
+    }
+    
+}
+
+]]></programlisting>
+Itt nézzük meg a fánknak a depth-jét.
+<programlisting><![CDATA[
+template <typename ValueType>
+void BinTree<ValueType>::deltree(Node *node) 
+{
+    if(node)
+    {
+        deltree(node->leftChild());
+        deltree(node->rightChild());
+        
+        delete node;
+    }
+    
+}
+
+]]></programlisting>
+Itt van a destrukorunk aminek a feladat hogy a binfat és a gyeremekeit likvidálja amivel memóriát szabadít fel.
+<programlisting><![CDATA[
+int main(int argc, char** argv, char ** env)
+{
+    BinTree<int> bt;
+    
+    bt << 8 << 9 << 5 << 2 << 7;
+    
+    bt.print();
+    
+    std::cout << std::endl;
+
+    ZLWTree<char> zt;
+
+    zt <<'0'<<'1'<<'1'<<'1'<<'1'<<'0'<<'0'<<'1'<<'0'<<'0'<<'1'<<'0'<<'0'<<'1'<<'0'<<'0'<<'0'<<'1'<<'1'<<'1';
+    
+    zt.print();
+
+}
+		]]></programlisting>
+		Main-nünkben meg csak tolunk egy pár tesztet hogy működik e amit írtunk.
+		</para>
+		<para>
+		A másoló és mozgató rész z3a18-ból
+		</para>
+		<para>
+		<programlisting ><![CDATA[
+public:
+		BinTree(Node *root = nullptr, Node *treep=nullptr): root(root), treep(treep){
+            std::cout << "BT ctor "<< std::endl;
+            
+        }
+        BinTree(const BinTree & old){
+            std::cout << "BT copy ctor "<< std::endl;
+            
+            root = cp(old.root,old.treep);
+        }
+        
+        Node * cp(Node *node, Node *treep){
+            
+            Node * newNode = nullptr;
+    
+            if(node){
+                newNode = new Node(node->getValue());
+                
+                newNode->leftChild(cp(node->leftChild(),treep));
+                newNode->rightChild(cp(node->rightChild(),treep));
+                
+                if(node == treep){
+                  this->treep= newNode;   
+                }
+            }
+            
+            return newNode;
+    
+        }
+        
+        BinTree & operator =(const BinTree & old){
+            std::cout << "BT copy assign "<< std::endl;
+            
+            BinTree tmp{old};
+            std::swap(*this, tmp);
+            return *this;
+            
+        }
+		BinTree(BinTree && old){
+         std::cout << "BT move ctor "<< std::endl;
+         root= nullptr;
+         
+         *this = std::move(old);
+         
+        }
+		BinTree & operator =(BinTree && old){
+            std::cout << "BT move assign "<< std::endl;   
+         
+            std::swap(old.root,root);
+            std::swap(old.treep,treep);
+            
+            return *this;
+        }
+        
+        
+		~BinTree(){
+            std::cout << "BT dtor "<< std::endl;   
+            deltree(root);
+        }
+]]></programlisting>  
+A BinTree osztály public részbe kerül és eltávolítjuk a lekötéseket amiket z3a17-ben használtunk.
+<programlisting ><![CDATA[
+		BinTree(Node *root = nullptr, Node *treep=nullptr): root(root), treep(treep){
+            std::cout << "BT ctor "<< std::endl;
+            
+        }
+        
+]]></programlisting>
+Itt a node*root és a node*treep alapértelmezett értéket kapnak amik nullpointerek lesznek és a root megkapja a root-ot és a treep is megkapja az értékét.
+Ha ezek sikérülnek kiirajtuk hogy BT ctor. 
+ <programlisting ><![CDATA[
+		BinTree(const BinTree & old){
+            std::cout << "BT copy ctor "<< std::endl;
+            
+            root = cp(old.root,old.treep);
+        }
+        
+]]></programlisting>  
+
+Ez lesz itt a másoló konstruktorunk. Bintree bekéri a másolandó fát és az old-ot.
+Ezek után a rootnak odaadjuk a cp függvenyel az old gyökerünket ls treepet.
+
+<programlisting ><![CDATA[
+		 Node * cp(Node *node, Node *treep){
+            
+            Node * newNode = nullptr;
+    
+            if(node){
+                newNode = new Node(node->getValue());
+                
+                newNode->leftChild(cp(node->leftChild(),treep));
+                newNode->rightChild(cp(node->rightChild(),treep));
+                
+                if(node == treep){
+                  this->treep= newNode;   
+                }
+            }
+            
+            return newNode;
+    
+        }
+]]></programlisting>  
+A másoló függvény kéri a másolandó Node pointerjét és a treep mutatót. Ezután létrehozunk egy új node* pointert amiit a nullpointerre állítjuk. 
+Ha van node-unk akkor uj node egyenlő egy new node-ra amibe beletoljuk a node értékét. Ezek után az új node-unkba bal és jobb gyermekeibe beletoljuk 
+a másolandó fa gyermekeit és treep-jét.Végül ha a node egyenlő a treep-el akkor a treep megkapja az új node-ot.
+<programlisting ><![CDATA[
+		 BinTree & operator =(const BinTree & old){
+            std::cout << "BT copy assign "<< std::endl;
+            
+            BinTree tmp{old};
+            std::swap(*this, tmp);
+            return *this;
+            
+        }
+]]></programlisting>
+A másolás konstruktor hozzárendelése. 
+<programlisting ><![CDATA[
+		 BinTree(BinTree && old){
+         std::cout << "BT move ctor "<< std::endl;
+         root= nullptr;
+         
+         *this = std::move(old);
+         
+        }
+]]></programlisting>
+A mozgató konstruktor. A root-ot nullpointerre mutatjuk kiirajtuk hogy bt move assisgn és felcseéljük az old.root, root-al 
+és a old.treep-et treep-el majd vissza terunoljuk a this* pointert
+<programlisting ><![CDATA[
+	BinTree & operator =(BinTree && old){
+            std::cout << "BT move assign "<< std::endl;   
+         
+            std::swap(old.root,root);
+            std::swap(old.treep,treep);
+            
+            return *this;
+        }
+]]></programlisting>
+
+</para>
+
     </section>                     
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
 </chapter>                

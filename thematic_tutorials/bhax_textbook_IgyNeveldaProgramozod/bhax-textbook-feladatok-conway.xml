@@ -19,7 +19,247 @@
         </para>
         <para>
             Tanulságok, tapasztalatok, magyarázat...
-        </para>            
+        </para>      
+        <para>
+			A program a hangyák feromonnal való kommunikációját szimulálja. A képernyőt felosszuk cellákra
+			és a cellákban levő hangyák megpróbálják elérni azt a társukat akinek a legerőbsebb a feromon szintje.
+			A cellák feromon szintje folyamatosan csökken kivéve ha egy hangya belesétál egy feromon foltba mert akkor
+			megnő a cella feromon tartalma.
+		</para>
+		<figure>
+            <title>Terminálba való futtatás</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/7/7.1.terminal.png" scale="65" />
+                </imageobject>
+                <textobject>
+                    <phrase>Terminálba való futtatás</phrase>
+                </textobject>
+            </mediaobject>
+        </figure>
+        <para>
+		A szimlációnkon renegetek mindent beállíthatunk kapcsolók segítségével.De persze nem kötelező megadni kapcsolókat
+		mert vannak alapértelmezett értékek.
+		</para>
+		<programlisting><![CDATA[
+		Lista a kapcsolókról:
+			
+		-w cellák szélességét
+		-m cellák magasságát
+		-n a hangyák száma
+		-t a lépések gyakorisága (Milliszekundum)
+		-p feromon párolgás gyorsasága
+		-f hangya rálép egy feromon cellára mennyivel növelje annak értékét
+		-d feromon cellák kezdő értéke
+		-a maximális feromon érték
+ 		-i minimális feromon érték
+ 		-s hangya mennyi feromont hagyjon a szomszédos cellákba
+ 		-c egy cellába max hány hangy lehet
+ 		
+		A main.cpp-be lévő futtatási javaslat
+		./myrmecologist -w 250 -m 150 -n 400 -t 10 -p 5 -f 80 -d 0 -a 255 -i 3 -s 3 -c 22
+		]]></programlisting>
+        <figure>
+            <title>UML ábra</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/7/hangyab.png" scale="60" />
+                </imageobject>
+                <textobject>
+                    <phrase>UML ábra</phrase>
+                </textobject>
+            </mediaobject>
+        </figure>
+        <para>
+		Na most hogy átnéztük a futtatást nézzünk is bele a forráskódba.
+        <programlisting><![CDATA[
+#ifndef ANT_H
+#define ANT_H
+
+class Ant
+{
+
+public:
+    int x;
+    int y;
+    int dir;
+
+    Ant(int x, int y): x(x), y(y) {
+        
+        dir = qrand() % 8;
+        
+    }
+
+};
+
+typedef std::vector<Ant> Ants;
+
+		]]></programlisting>
+		Ebben a részben a hangyák helyzetét határozzuk meg az x és y kordinátákkal.A helyzetén kívül a hangya irányát
+		is itt számoljuk ki melyet a dir változóba tároljuk.Az utolsó sorban levő typefef -el az Ant tipusú elemekből álló
+		vektorokat az Ants -el tudunk hivatkozni.A következő osztályunk az AntWin mely az antwin.h és antwin.cpp-ben találunk.
+		<programlisting><![CDATA[
+#ifndef ANTWIN_H
+#define ANTWIN_H
+
+#include <QMainWindow>
+#include <QPainter>
+#include <QString>
+#include <QCloseEvent>
+#include "antthread.h"
+#include "ant.h"
+
+class AntWin : public QMainWindow
+{
+    Q_OBJECT
+
+public:
+    AntWin(int width = 100, int height = 75,
+           int delay = 120, int numAnts = 100,
+           int pheromone = 10, int nbhPheromon = 3,
+           int evaporation = 2, int cellDef = 1,
+           int min = 2, int max = 50,
+           int cellAntMax = 4, QWidget *parent = 0);
+
+    AntThread* antThread;
+
+    void closeEvent ( QCloseEvent *event ) {
+
+        antThread->finish();
+        antThread->wait();
+        event->accept();
+    }
+
+    void keyPressEvent ( QKeyEvent *event )
+    {
+
+        if ( event->key() == Qt::Key_P ) {
+            antThread->pause();
+        } else if ( event->key() == Qt::Key_Q
+                    ||  event->key() == Qt::Key_Escape ) {
+            close();
+        }
+
+    }
+
+    virtual ~AntWin();
+    void paintEvent(QPaintEvent*);
+
+private:
+
+    int ***grids;
+    int **grid;
+    int gridIdx;
+    int cellWidth;
+    int cellHeight;
+    int width;
+    int height;
+    int max;
+    int min;
+    Ants* ants;
+
+public slots :
+    void step ( const int &);
+
+};
+
+#endif
+		]]></programlisting>
+		A QMainWIndow osztály meghívásából tudjuk létrehozni a programunk ablakát. Mivel valamit ábrázolni is akarunk
+		szükségünk van a QPainter osztályra. A QTString osztályal tudunk unicode stringeket tárolni, a QCloseEvent segítségével
+		tudjuk a program bezárását szabályozni.Ez a header kapcsolja össze az Ant és az AntThread osztályokat.Szöval gyakorlatilag
+		ebben a fájlban történik az ablak létrehozás és itt állítjuk be az egyes paramétereket plusz a program futtatását és
+		szüneteltetését is itt vegezzük.
+		<programlisting><![CDATA[
+			#ifndef ANTTHREAD_H
+#define ANTTHREAD_H
+
+#include <QThread>
+#include "ant.h"
+
+class AntThread : public QThread
+{
+    Q_OBJECT
+
+public:
+    AntThread(Ants * ants, int ***grids, int width, int height,
+             int delay, int numAnts, int pheromone, int nbrPheromone, 
+             int evaporation, int min, int max, int cellAntMax);
+    
+    ~AntThread();
+    
+    void run();
+    void finish()
+    {
+        running = false;
+    }
+
+    void pause()
+    {
+        paused = !paused;
+    }
+
+    bool isRunnung()
+    {
+        return running;
+    }
+
+private:
+    bool running {true};
+    bool paused {false};
+    Ants* ants;
+    int** numAntsinCells;
+    int min, max;
+    int cellAntMax;
+    int pheromone;
+    int evaporation;
+    int nbrPheromone;
+    int ***grids;
+    int width;
+    int height;
+    int gridIdx;
+    int delay;
+    
+    void timeDevel();
+
+    int newDir(int sor, int oszlop, int vsor, int voszlop);
+    void detDirs(int irany, int& ifrom, int& ito, int& jfrom, int& jto );
+    int moveAnts(int **grid, int row, int col, int& retrow, int& retcol, int);
+    double sumNbhs(int **grid, int row, int col, int);
+    void setPheromone(int **grid, int row, int col);
+
+signals:
+    void step ( const int &);
+
+};
+		]]></programlisting>
+		A számításokat az AntThread.h és AntThread.cpp -ben végezzük.A QThread osztályra szükségünk van hogy kezelje
+		a program szálait. Az AntThread osztály megkapja azokat az értékeket amit az AntWin megkapott program elkezdi
+		mozgatni a hangyákat.Kiszámolja hogy merre menjenek a feromon éréküket a cella max érték alapján állítja az egyes
+		cellák feromonértékeit és magadja az AntWIn osztálynak, hogy mely cellákat kell átfesteni.
+		</para>
+        <figure>
+            <title>Hangya szimuláció kapcsolók nélkül</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/7/7.1.futás.png" scale="40" />
+                </imageobject>
+                <textobject>
+                    <phrase>Hangya szimuláció kapcsolók nélkül</phrase>
+                </textobject>
+            </mediaobject>
+        </figure> 
+        <figure>
+            <title>Hangya szimuláció a recommended kapcsolókkal</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/7/7.1.futás.argomentumokkal.png" scale="30" />
+                </imageobject>
+                <textobject>
+                    <phrase>Hangya szimuláció a recommended kapcsolókkal</phrase>
+                </textobject>
+            </mediaobject>
+        </figure>       
     </section>        
     <section>
         <title>Java életjáték</title>
@@ -35,7 +275,423 @@
         </para>
         <para>
             Tanulságok, tapasztalatok, magyarázat...
-        </para>            
+        </para>      
+        <para>
+			A négyzetrács mezőit celláknak, a korongokat sejteknek nevezzük. 
+			Egy cella környezete a hozzá legközelebb eső 8 mező (tehát a cellához képest
+		    „átlósan” elhelyezkedő cellákat is figyelembe vesszük, feltesszük hogy a 
+		    négyzetrácsnak nincs széle). Egy sejt/cella szomszédjai a környezetében lévő sejtek. 
+		    A játék körökre osztott, a kezdő állapotban tetszőleges számú (egy vagy több) cellába 
+		    sejteket helyezünk. Ezt követően a játékosnak nincs beleszólása a játékmenetbe. 
+		    Egy sejttel (cellával) egy körben a következő három dolog történhet:
+			A sejt túléli a kört, ha két vagy három szomszédja van.
+			A sejt elpusztul, ha kettőnél kevesebb (elszigetelődés), vagy háromnál több (túlnépesedés) szomszédja van.
+			Új sejt születik minden olyan cellában, melynek környezetében pontosan három sejt található.
+        <programlisting><![CDATA[
+			public class Sejtautomata extends java.awt.Frame implements Runnable {
+    /** Egy sejt lehet élő */
+    public static final boolean ÉLŐ = true;
+    /** vagy halott */
+    public static final boolean HALOTT = false;
+    /** Két rácsot használunk majd, az egyik a sejttér állapotát
+     * a t_n, a másik a t_n+1 időpillanatban jellemzi. */
+    protected boolean [][][] rácsok = new boolean [2][][];
+    /** Valamelyik rácsra mutat, technikai jellegű, hogy ne kelljen a
+     * [2][][]-ból az első dimenziót használni, mert vagy az egyikre
+     * állítjuk, vagy a másikra. */
+    protected boolean [][] rács;
+    /** Megmutatja melyik rács az aktuális: [rácsIndex][][] */
+    protected int rácsIndex = 0;
+    /** Pixelben egy cella adatai. */
+    protected int cellaSzélesség = 20;
+    protected int cellaMagasság = 20;
+    /** A sejttér nagysága, azaz hányszor hány cella van? */
+    protected int szélesség = 20;
+    protected int magasság = 10;
+    /** A sejttér két egymást követő t_n és t_n+1 diszkrét időpillanata
+     közötti valós idő. */  
+    protected int várakozás = 1000;
+    // Pillanatfelvétel készítéséhez
+    private java.awt.Robot robot;
+    /** Készítsünk pillanatfelvételt? */
+    private boolean pillanatfelvétel = false;
+    /** A pillanatfelvételek számozásához. */
+    private static int pillanatfelvételSzámláló = 0;
+    /**
+     * Létrehoz egy <code>Sejtautomata</code> objektumot.
+     *
+     * @param      szélesség    a sejttér szélessége.
+     * @param      magasság     a sejttér szélessége.
+     */
+    public Sejtautomata(int szélesség, int magasság) {
+        this.szélesség = szélesség;
+        this.magasság = magasság;
+        // A két rács elkészítése
+        rácsok[0] = new boolean[magasság][szélesség];
+        rácsok[1] = new boolean[magasság][szélesség];
+        rácsIndex = 0;
+        rács = rácsok[rácsIndex];
+        // A kiinduló rács minden cellája HALOTT
+        for(int i=0; i<rács.length; ++i)
+            for(int j=0; j<rács[0].length; ++j)
+                rács[i][j] = HALOTT;
+        // A kiinduló rácsra "élőlényeket" helyezünk
+        //sikló(rács, 2, 2);
+        siklóKilövő(rács, 5, 60);
+        // Az ablak bezárásakor kilépünk a programból.
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                setVisible(false);
+                System.exit(0);
+            }
+        });
+        // A billentyűzetről érkező események feldolgozása
+        addKeyListener(new java.awt.event.KeyAdapter() {
+            // Az 'k', 'n', 'l', 'g' és 's' gombok lenyomását figyeljük
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                if(e.getKeyCode() == java.awt.event.KeyEvent.VK_K) {
+                    // Felezük a cella méreteit:
+                    cellaSzélesség /= 2;
+                    cellaMagasság /= 2;
+                    setSize(Sejtautomata.this.szélesség*cellaSzélesség,
+                            Sejtautomata.this.magasság*cellaMagasság);
+                    validate();
+                } else if(e.getKeyCode() == java.awt.event.KeyEvent.VK_N) {
+                    // Duplázzuk a cella méreteit:
+                    cellaSzélesség *= 2;
+                    cellaMagasság *= 2;
+                    setSize(Sejtautomata.this.szélesség*cellaSzélesség,
+                            Sejtautomata.this.magasság*cellaMagasság);
+                    validate();
+                } else if(e.getKeyCode() == java.awt.event.KeyEvent.VK_S)
+                    pillanatfelvétel = !pillanatfelvétel;
+                else if(e.getKeyCode() == java.awt.event.KeyEvent.VK_G)
+                    várakozás /= 2;
+                else if(e.getKeyCode() == java.awt.event.KeyEvent.VK_L)
+                    várakozás *= 2;
+                repaint();
+            }
+        });
+        // Egér kattintó események feldolgozása:
+        addMouseListener(new java.awt.event.MouseAdapter() {
+            // Egér kattintással jelöljük ki a nagyítandó területet
+            // bal felső sarkát vagy ugyancsak egér kattintással
+            // vizsgáljuk egy adott pont iterációit:
+            public void mousePressed(java.awt.event.MouseEvent m) {
+                // Az egérmutató pozíciója
+                int x = m.getX()/cellaSzélesség;
+                int y = m.getY()/cellaMagasság;
+                rácsok[rácsIndex][y][x] = !rácsok[rácsIndex][y][x];
+                repaint();
+            }
+        });
+        // Egér mozgás események feldolgozása:
+        addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            // Vonszolással jelöljük ki a négyzetet:
+            public void mouseDragged(java.awt.event.MouseEvent m) {
+                int x = m.getX()/cellaSzélesség;
+                int y = m.getY()/cellaMagasság;
+                rácsok[rácsIndex][y][x] = ÉLŐ;
+                repaint();
+            }
+        });
+        // Cellaméretek kezdetben
+        cellaSzélesség = 10;
+        cellaMagasság = 10;
+        // Pillanatfelvétel készítéséhez:
+        try {
+            robot = new java.awt.Robot(
+                    java.awt.GraphicsEnvironment.
+                    getLocalGraphicsEnvironment().
+                    getDefaultScreenDevice());
+        } catch(java.awt.AWTException e) {
+            e.printStackTrace();
+        }
+        // A program ablakának adatai:
+        setTitle("Sejtautomata");
+        setResizable(false);
+        setSize(szélesség*cellaSzélesség,
+                magasság*cellaMagasság);
+        setVisible(true);
+        // A sejttér életrekeltése:
+        new Thread(this).start();
+    }
+    /** A sejttér kirajzolása. */
+    public void paint(java.awt.Graphics g) {
+        // Az aktuális
+        boolean [][] rács = rácsok[rácsIndex];
+        // rácsot rajzoljuk ki:
+        for(int i=0; i<rács.length; ++i) { // végig lépked a sorokon
+            for(int j=0; j<rács[0].length; ++j) { // s az oszlopok
+                // Sejt cella kirajzolása
+                if(rács[i][j] == ÉLŐ)
+                    g.setColor(java.awt.Color.BLACK);
+                else
+                    g.setColor(java.awt.Color.WHITE);
+                g.fillRect(j*cellaSzélesség, i*cellaMagasság,
+                        cellaSzélesség, cellaMagasság);
+                // Rács kirajzolása
+                g.setColor(java.awt.Color.LIGHT_GRAY);
+                g.drawRect(j*cellaSzélesség, i*cellaMagasság,
+                        cellaSzélesség, cellaMagasság);
+            }
+        }
+        // Készítünk pillanatfelvételt?
+        if(pillanatfelvétel) {
+            // a biztonság kedvéért egy kép készítése után
+            // kikapcsoljuk a pillanatfelvételt, hogy a
+            // programmal ismerkedő Olvasó ne írja tele a
+            // fájlrendszerét a pillanatfelvételekkel
+            pillanatfelvétel = false;
+            pillanatfelvétel(robot.createScreenCapture
+                    (new java.awt.Rectangle
+                    (getLocation().x, getLocation().y,
+                    szélesség*cellaSzélesség,
+                    magasság*cellaMagasság)));
+        }
+    }
+    /**
+     * Az kérdezett állapotban lévő nyolcszomszédok száma.
+     *
+     * @param   rács    a sejttér rács
+     * @param   sor     a rács vizsgált sora
+     * @param   oszlop  a rács vizsgált oszlopa
+     * @param   állapor a nyolcszomszédok vizsgált állapota
+     * @return int a kérdezett állapotbeli nyolcszomszédok száma.
+     */
+    public int szomszédokSzáma(boolean [][] rács,
+            int sor, int oszlop, boolean állapot) {        
+        int állapotúSzomszéd = 0;
+        // A nyolcszomszédok végigzongorázása:
+        for(int i=-1; i<2; ++i)
+            for(int j=-1; j<2; ++j)
+                // A vizsgált sejtet magát kihagyva:
+                if(!((i==0) && (j==0))) {
+            // A sejttérből szélének szomszédai
+            // a szembe oldalakon ("periódikus határfeltétel")
+            int o = oszlop + j;
+            if(o < 0)
+                o = szélesség-1;
+            else if(o >= szélesség)
+                o = 0;
+            
+            int s = sor + i;
+            if(s < 0)
+                s = magasság-1;
+            else if(s >= magasság)
+                s = 0;
+            
+            if(rács[s][o] == állapot)
+                ++állapotúSzomszéd;
+                }
+        
+        return állapotúSzomszéd;
+    }
+    /**
+     * A sejttér időbeli fejlődése a John H. Conway féle
+     * életjáték sejtautomata szabályai alapján történik.
+     * A szabályok részletes ismertetését lásd például a
+     * [MATEK JÁTÉK] hivatkozásban (Csákány Béla: Diszkrét
+     * matematikai játékok. Polygon, Szeged 1998. 171. oldal.)
+     */
+    public void időFejlődés() {
+        
+        boolean [][] rácsElőtte = rácsok[rácsIndex];
+        boolean [][] rácsUtána = rácsok[(rácsIndex+1)%2];
+        
+        for(int i=0; i<rácsElőtte.length; ++i) { // sorok
+            for(int j=0; j<rácsElőtte[0].length; ++j) { // oszlopok
+                
+                int élők = szomszédokSzáma(rácsElőtte, i, j, ÉLŐ);
+                
+                if(rácsElőtte[i][j] == ÉLŐ) {
+                /* Élő élő marad, ha kettő vagy három élő
+                 szomszedja van, különben halott lesz. */
+                    if(élők==2 || élők==3)
+                        rácsUtána[i][j] = ÉLŐ;
+                    else
+                        rácsUtána[i][j] = HALOTT;
+                }  else {
+                /* Halott halott marad, ha három élő
+                 szomszedja van, különben élő lesz. */
+                    if(élők==3)
+                        rácsUtána[i][j] = ÉLŐ;
+                    else
+                        rácsUtána[i][j] = HALOTT;
+                }
+            }
+        }
+        rácsIndex = (rácsIndex+1)%2;
+    }
+    /** A sejttér időbeli fejlődése. */
+    public void run() {
+        
+        while(true) {
+            try {
+                Thread.sleep(várakozás);
+            } catch (InterruptedException e) {}
+            
+            időFejlődés();
+            repaint();
+        }
+    }
+    /**
+     * A sejttérbe "élőlényeket" helyezünk, ez a "sikló".
+     * Adott irányban halad, másolja magát a sejttérben.
+     * Az élőlény ismertetését lásd például a
+     * [MATEK JÁTÉK] hivatkozásban (Csákány Béla: Diszkrét
+     * matematikai játékok. Polygon, Szeged 1998. 172. oldal.)
+     *
+     * @param   rács    a sejttér ahová ezt az állatkát helyezzük
+     * @param   x       a befoglaló tégla bal felső sarkának oszlopa
+     * @param   y       a befoglaló tégla bal felső sarkának sora
+     */
+    public void sikló(boolean [][] rács, int x, int y) {
+        
+        rács[y+ 0][x+ 2] = ÉLŐ;
+        rács[y+ 1][x+ 1] = ÉLŐ;
+        rács[y+ 2][x+ 1] = ÉLŐ;
+        rács[y+ 2][x+ 2] = ÉLŐ;
+        rács[y+ 2][x+ 3] = ÉLŐ;
+        
+    }
+    /**
+     * A sejttérbe "élőlényeket" helyezünk, ez a "sikló ágyú".
+     * Adott irányban siklókat lő ki.
+     * Az élőlény ismertetését lásd például a
+     * [MATEK JÁTÉK] hivatkozásban /Csákány Béla: Diszkrét
+     * matematikai játékok. Polygon, Szeged 1998. 173. oldal./,
+     * de itt az ábra hibás, egy oszloppal told még balra a 
+     * bal oldali 4 sejtes négyzetet. A helyes ágyú rajzát 
+     * lásd pl. az [ÉLET CIKK] hivatkozásban /Robert T. 
+     * Wainwright: Life is Universal./ (Megemlíthetjük, hogy
+     * mindkettő tartalmaz két felesleges sejtet is.)
+     *
+     * @param   rács    a sejttér ahová ezt az állatkát helyezzük
+     * @param   x       a befoglaló tégla bal felső sarkának oszlopa
+     * @param   y       a befoglaló tégla bal felső sarkának sora
+     */    
+    public void siklóKilövő(boolean [][] rács, int x, int y) {
+        
+        rács[y+ 6][x+ 0] = ÉLŐ;
+        rács[y+ 6][x+ 1] = ÉLŐ;
+        rács[y+ 7][x+ 0] = ÉLŐ;
+        rács[y+ 7][x+ 1] = ÉLŐ;
+        
+        rács[y+ 3][x+ 13] = ÉLŐ;
+        
+        rács[y+ 4][x+ 12] = ÉLŐ;
+        rács[y+ 4][x+ 14] = ÉLŐ;
+        
+        rács[y+ 5][x+ 11] = ÉLŐ;
+        rács[y+ 5][x+ 15] = ÉLŐ;
+        rács[y+ 5][x+ 16] = ÉLŐ;
+        rács[y+ 5][x+ 25] = ÉLŐ;
+        
+        rács[y+ 6][x+ 11] = ÉLŐ;
+        rács[y+ 6][x+ 15] = ÉLŐ;
+        rács[y+ 6][x+ 16] = ÉLŐ;
+        rács[y+ 6][x+ 22] = ÉLŐ;
+        rács[y+ 6][x+ 23] = ÉLŐ;
+        rács[y+ 6][x+ 24] = ÉLŐ;
+        rács[y+ 6][x+ 25] = ÉLŐ;
+        
+        rács[y+ 7][x+ 11] = ÉLŐ;
+        rács[y+ 7][x+ 15] = ÉLŐ;
+        rács[y+ 7][x+ 16] = ÉLŐ;
+        rács[y+ 7][x+ 21] = ÉLŐ;
+        rács[y+ 7][x+ 22] = ÉLŐ;
+        rács[y+ 7][x+ 23] = ÉLŐ;
+        rács[y+ 7][x+ 24] = ÉLŐ;
+        
+        rács[y+ 8][x+ 12] = ÉLŐ;
+        rács[y+ 8][x+ 14] = ÉLŐ;
+        rács[y+ 8][x+ 21] = ÉLŐ;
+        rács[y+ 8][x+ 24] = ÉLŐ;
+        rács[y+ 8][x+ 34] = ÉLŐ;
+        rács[y+ 8][x+ 35] = ÉLŐ;
+        
+        rács[y+ 9][x+ 13] = ÉLŐ;
+        rács[y+ 9][x+ 21] = ÉLŐ;
+        rács[y+ 9][x+ 22] = ÉLŐ;
+        rács[y+ 9][x+ 23] = ÉLŐ;
+        rács[y+ 9][x+ 24] = ÉLŐ;
+        rács[y+ 9][x+ 34] = ÉLŐ;
+        rács[y+ 9][x+ 35] = ÉLŐ;
+        
+        rács[y+ 10][x+ 22] = ÉLŐ;
+        rács[y+ 10][x+ 23] = ÉLŐ;
+        rács[y+ 10][x+ 24] = ÉLŐ;
+        rács[y+ 10][x+ 25] = ÉLŐ;
+        
+        rács[y+ 11][x+ 25] = ÉLŐ;
+        
+    }
+    /** Pillanatfelvételek készítése. */
+    public void pillanatfelvétel(java.awt.image.BufferedImage felvetel) {
+        // A pillanatfelvétel kép fájlneve
+        StringBuffer sb = new StringBuffer();
+        sb = sb.delete(0, sb.length());
+        sb.append("sejtautomata");
+        sb.append(++pillanatfelvételSzámláló);
+        sb.append(".png");
+        // png formátumú képet mentünk
+        try {
+            javax.imageio.ImageIO.write(felvetel, "png",
+                    new java.io.File(sb.toString()));
+        } catch(java.io.IOException e) {
+            e.printStackTrace();
+        }
+    }
+    // Ne villogjon a felület (mert a "gyári" update()
+    // lemeszelné a vászon felületét).    
+    public void update(java.awt.Graphics g) {
+        paint(g);
+    }    
+    /**
+     * Példányosít egy Conway-féle életjáték szabályos
+     * sejttér obektumot.
+     */    
+    public static void main(String[] args) {
+        // 100 oszlop, 75 sor mérettel:
+        new Sejtautomata(100, 75);
+    }
+} 
+		]]></programlisting>
+		</para>      
+		<figure>
+            <title>Terminál futtatás 1</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/7/7.2.terminal.png" scale="60" />
+                </imageobject>
+                <textobject>
+                    <phrase>Terminál futtatás 1</phrase>
+                </textobject>
+            </mediaobject>
+        </figure> 
+        <figure>
+            <title>Terminál futtatás 2</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/7/7.2.terminal2.png" scale="60" />
+                </imageobject>
+                <textobject>
+                    <phrase>Terminál futtatás 2</phrase>
+                </textobject>
+            </mediaobject>
+        </figure> 
+        <figure>
+            <title>Program futás közben</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/7/7.2.futtatas.png" scale="75" />
+                </imageobject>
+                <textobject>
+                    <phrase>Program futás közben</phrase>
+                </textobject>
+            </mediaobject>
+        </figure> 
     </section>        
     <section>
         <title>Qt C++ életjáték</title>
@@ -51,6 +707,450 @@
         <para>
             Tanulságok, tapasztalatok, magyarázat...
         </para>            
+        <para>
+		<emphasis role="bold">Sejtszál.h</emphasis> ELsőnek includoljuk a QThread osztályt és a sejtablak.h-t
+		Létrehozunk egy QThread osztályt melyet Sejtszal -nak nevezünk el. Publikusan tagben deklaráljuk a 
+		konstruktort és a destruktort és a run() függvényt. A protected részben létrehozzunk egy pár változót mint
+		az előső feladatunkban és az utolsó sorban létrehozunk egy SejtAblakra mutató mutatót.
+        <programlisting><![CDATA[
+#ifndef SEJTSZAL_H
+#define SEJTSZAL_H
+
+#include <QThread>
+#include "sejtablak.h"
+
+class SejtAblak;
+
+class SejtSzal : public QThread
+{
+    Q_OBJECT
+
+public:
+    SejtSzal(bool ***racsok, int szelesseg, int magassag,
+             int varakozas, SejtAblak *sejtAblak);
+    ~SejtSzal();
+    void run();
+
+protected:
+    bool ***racsok;
+    int szelesseg, magassag;
+    // Megmutatja melyik rács az aktuális: [rácsIndex][][]
+    int racsIndex;
+    // A sejttér két egymást követő t_n és t_n+1 diszkrét időpillanata
+    // közötti valós idő.
+    int varakozas;
+    void idoFejlodes();
+    int szomszedokSzama(bool **racs,
+                        int sor, int oszlop, bool allapot);
+    SejtAblak* sejtAblak;
+
+};
+
+#endif // SEJTSZAL_H
+		]]></programlisting>
+		<emphasis role="bold">Sejtablak.h</emphasis> Hozzáadjuk a QtGui/QMainWIndow és a QPainter osztályokat
+		ezeket már részleteztem az első feladatban valamint a sejszal.h-t utóbbiból deklaráljuk a SejtSzal classt.
+		A QMainWIndow kiterjesztéként beaállítjuk a SejtAblak osztályt.Publikusként létrehozunk 2 egy konstruktort
+		és egy destruktort és deklaráljuk a vissza függvényt.Protectedben ismét változókat és boolean-eket
+		vezetünk be ezeknek a feladatuk magábafoglalja a nevük csak az utolsó 3 érdekes a paintEvent() ami a kirajzolásért
+		lesz felelős a siklo() kirajzolja a siklót és a sikloKilovo() kirajzolja a siklokilovot.
+		
+		<programlisting><![CDATA[
+#ifndef SEJTABLAK_H
+#define SEJTABLAK_H
+
+#include <QMainWindow>
+#include <QPainter>
+#include "sejtszal.h"
+
+class SejtSzal;
+
+class SejtAblak : public QMainWindow
+{
+  Q_OBJECT
+  
+public:
+  SejtAblak(int szelesseg = 100, int magassag = 75, QWidget *parent = 0);
+
+  ~SejtAblak();
+  // Egy sejt lehet élő
+  static const bool ELO = true;
+  // vagy halott
+  static const bool HALOTT = false;
+  void vissza(int racsIndex);
+  
+protected:
+  // Két rácsot használunk majd, az egyik a sejttér állapotát
+  // a t_n, a másik a t_n+1 időpillanatban jellemzi.
+  bool ***racsok;
+  // Valamelyik rácsra mutat, technikai jellegű, hogy ne kelljen a
+  // [2][][]-ból az első dimenziót használni, mert vagy az egyikre
+  // állítjuk, vagy a másikra.
+  bool **racs;
+  // Megmutatja melyik rács az aktuális: [rácsIndex][][]
+  int racsIndex;
+  // Pixelben egy cella adatai.
+  int cellaSzelesseg;
+  int cellaMagassag;
+  // A sejttér nagysága, azaz hányszor hány cella van?
+  int szelesseg;
+  int magassag;    
+  void paintEvent(QPaintEvent*);
+  void siklo(bool **racs, int x, int y);
+  void sikloKilovo(bool **racs, int x, int y);
+  
+private:
+  SejtSzal* eletjatek;
+  
+};
+
+#endif // SEJTABLAK_H
+		]]></programlisting>
+		<emphasis role="bold">Sejtszal.cpp</emphasis> A konstuktor csak bekéri az értékeket és a racsIndex-et 0 ra állítja.
+		A szomszedokSzama() megadott állapotú elemek számát adja vissza az aktulis sejt szomszédságából.
+		Az idoFejlodes() az aktuális rács alapján kiállítja a következő állapotot a következő rácsba.
+		Végig megy az összes sejten és átnézi az összeset. Egy sejt csak akkor maradhat élő ha 2 vagy 3 szomszéda van és ha egy sejt halott
+		csak akkor éledhet fel ha nincs 3 elő szomszéda miután ezeket elvégezte a rácsindexet lépteti.
+		A run() egy végtelen ciklus mely elindítja el a folyamatot benne altatjuk a varakozas függvényt és
+		mentjük az állapotot ha kapánk egy varakozast tudjuk mire kell visszaállítani a rácsokat.
+		<programlisting><![CDATA[
+#include "sejtszal.h"
+
+SejtSzal::SejtSzal(bool ***racsok, int szelesseg, int magassag, int varakozas, SejtAblak *sejtAblak)
+{
+    this->racsok = racsok;
+    this->szelesseg = szelesseg;
+    this->magassag = magassag;
+    this->varakozas = varakozas;
+    this->sejtAblak = sejtAblak;
+
+    racsIndex = 0;
+}
+/**
+   * Az kérdezett állapotban lévõ nyolcszomszédok száma.
+   *
+   * @param   rács    a sejttér rács
+   * @param   sor     a rács vizsgált sora
+   * @param   oszlop  a rács vizsgált oszlopa
+   * @param   állapor a nyolcszomszédok vizsgált állapota
+   * @return int a kérdezett állapotbeli nyolcszomszédok száma.
+   */
+int SejtSzal::szomszedokSzama(bool **racs,
+                              int sor, int oszlop, bool allapot) {
+    int allapotuSzomszed = 0;
+    // A nyolcszomszédok végigzongorázása:
+    for(int i=-1; i<2; ++i)
+        for(int j=-1; j<2; ++j)
+            // A vizsgált sejtet magát kihagyva:
+            if(!((i==0) && (j==0))) {
+        // A sejttérbõl szélének szomszédai
+        // a szembe oldalakon ("periódikus határfeltétel")
+        int o = oszlop + j;
+        if(o < 0)
+            o = szelesseg-1;
+        else if(o >= szelesseg)
+            o = 0;
+
+        int s = sor + i;
+        if(s < 0)
+            s = magassag-1;
+        else if(s >= magassag)
+            s = 0;
+
+        if(racs[s][o] == allapot)
+            ++allapotuSzomszed;
+    }
+
+    return allapotuSzomszed;
+}
+
+/**
+ * A sejttér idõbeli fejlõdése a John H. Conway féle
+ * életjáték sejtautomata szabályai alapján történik.
+ * A szabályok részletes ismertetését lásd például a
+ * [MATEK JÁTÉK] hivatkozásban (Csákány Béla: Diszkrét
+ * matematikai játékok. Polygon, Szeged 1998. 171. oldal.)
+ */
+void SejtSzal::idoFejlodes() {
+
+    bool **racsElotte = racsok[racsIndex];
+    bool **racsUtana = racsok[(racsIndex+1)%2];
+
+    for(int i=0; i<magassag; ++i) { // sorok
+        for(int j=0; j<szelesseg; ++j) { // oszlopok
+
+            int elok = szomszedokSzama(racsElotte, i, j, SejtAblak::ELO);
+
+            if(racsElotte[i][j] == SejtAblak::ELO) {
+                /* Élõ élõ marad, ha kettõ vagy három élõ
+             szomszedja van, különben halott lesz. */
+                if(elok==2 || elok==3)
+                    racsUtana[i][j] = SejtAblak::ELO;
+                else
+                    racsUtana[i][j] = SejtAblak::HALOTT;
+            }  else {
+                /* Halott halott marad, ha három élõ
+             szomszedja van, különben élõ lesz. */
+                if(elok==3)
+                    racsUtana[i][j] = SejtAblak::ELO;
+                else
+                    racsUtana[i][j] = SejtAblak::HALOTT;
+            }
+        }
+    }
+    racsIndex = (racsIndex+1)%2;
+}
+
+
+/** A sejttér idõbeli fejlõdése. */
+void SejtSzal::run()
+{
+    while(true) {
+        QThread::msleep(varakozas);
+        idoFejlodes();
+        sejtAblak->vissza(racsIndex);
+    }
+
+}
+
+SejtSzal::~SejtSzal()
+{
+}
+
+		]]></programlisting>
+		<emphasis role="bold">Sejtablak.cpp</emphasis> Megadja az ablak nevét és beállítja a szelesseg és magassag változókat.
+		A cellák méretát kódon belül kell megadni beállíthatjuk az ablak méretét is szintén kódon belül.
+		létrehozunk 2 rácsot és az őket tároló objektumokat. A racsIndexet 0-ra állítjuk és feltöltjük a rácsokat halott sejtekkel.
+		Ezután meghívjuk a sikloKilovo() függvényt így kapunk egy siklókilövőt.Ezek után márcsak annyi dolgunk maradt, hogy példányosítunk egy SejtSzal-at a megfelelő paraméterekkel,
+		aztán meghívjuk az így létrehozozz objektum örökölt start() függvényét, ami meghívja a SejtSzal-unk
+		run() metódusát, ezzel elindítva az életjátékot. A paintEvent() az végigmegy a rácsokon és minden élő sejtet feketére fest egyábként meg fehére plusz
+		rajzol egy téglalapot és beszinezi szürkére. A destruktor törli a threadet , rácsokat. rácsok tartalmát.
+		<programlisting><![CDATA[
+		#include "sejtablak.h"
+
+SejtAblak::SejtAblak(int szelesseg, int magassag, QWidget *parent)
+: QMainWindow(parent)
+{
+  setWindowTitle("A John Horton Conway-féle életjáték");
+  
+  this->magassag = magassag;
+  this->szelesseg = szelesseg;
+
+  
+  cellaSzelesseg = 6;
+  cellaMagassag = 6;
+
+  setFixedSize(QSize(szelesseg*cellaSzelesseg, magassag*cellaMagassag));
+  
+  racsok = new bool**[2];
+  racsok[0] = new bool*[magassag];
+  for(int i=0; i<magassag; ++i)
+    racsok[0][i] = new bool [szelesseg];
+  racsok[1] = new bool*[magassag];
+  for(int i=0; i<magassag; ++i)
+    racsok[1][i] = new bool [szelesseg];
+
+  racsIndex = 0;
+  racs = racsok[racsIndex];
+
+  // A kiinduló racs minden cellája HALOTT
+  for(int i=0; i<magassag; ++i)
+    for(int j=0; j<szelesseg; ++j)
+      racs[i][j] = HALOTT;
+    // A kiinduló racsra "ELOlényeket" helyezünk
+    //siklo(racs, 2, 2);
+
+    sikloKilovo(racs, 5, 60);
+
+  eletjatek = new SejtSzal(racsok, szelesseg, magassag, 120, this);
+
+  eletjatek->start();
+  
+}
+
+void SejtAblak::paintEvent(QPaintEvent*) {
+  QPainter qpainter(this);
+  
+  // Az aktuális
+  bool **racs = racsok[racsIndex];
+  // racsot rajzoljuk ki:
+  for(int i=0; i<magassag; ++i) { // végig lépked a sorokon
+    for(int j=0; j<szelesseg; ++j) { // s az oszlopok
+      // Sejt cella kirajzolása
+      if(racs[i][j] == ELO)
+	qpainter.fillRect(j*cellaSzelesseg, i*cellaMagassag,
+			  cellaSzelesseg, cellaMagassag, Qt::black);
+	else
+	  qpainter.fillRect(j*cellaSzelesseg, i*cellaMagassag,
+			    cellaSzelesseg, cellaMagassag, Qt::white);
+	  qpainter.setPen(QPen(Qt::gray, 1));
+	
+	qpainter.drawRect(j*cellaSzelesseg, i*cellaMagassag,
+			  cellaSzelesseg, cellaMagassag);
+    }
+  }
+  
+  qpainter.end();
+}
+
+
+SejtAblak::~SejtAblak()
+{
+  delete eletjatek;
+  
+  for(int i=0; i<magassag; ++i) {
+    delete[] racsok[0][i];
+    delete[] racsok[1][i];
+  }
+  
+  delete[] racsok[0];
+  delete[] racsok[1];
+  delete[] racsok;
+  
+  
+}
+
+void SejtAblak::vissza(int racsIndex)
+{
+  this->racsIndex = racsIndex;
+  update();
+}
+
+/**
+ * A sejttérbe "ELOlényeket" helyezünk, ez a "sikló".
+ * Adott irányban halad, másolja magát a sejttérben.
+ * Az ELOlény ismertetését lásd például a
+ * [MATEK JÁTÉK] hivatkozásban (Csákány Béla: Diszkrét
+ * matematikai játékok. Polygon, Szeged 1998. 172. oldal.)
+ *
+ * @param   racs    a sejttér ahová ezt az állatkát helyezzük
+ * @param   x       a befoglaló tégla bal felsõ sarkának oszlopa
+ * @param   y       a befoglaló tégla bal felsõ sarkának sora
+ */
+void SejtAblak::siklo(bool **racs, int x, int y) {
+  
+  racs[y+ 0][x+ 2] = ELO;
+  racs[y+ 1][x+ 1] = ELO;
+  racs[y+ 2][x+ 1] = ELO;
+  racs[y+ 2][x+ 2] = ELO;
+  racs[y+ 2][x+ 3] = ELO;
+  
+}
+/**
+ * A sejttérbe "ELOlényeket" helyezünk, ez a "sikló ágyú".
+ * Adott irányban siklókat lõ ki.
+ * Az ELOlény ismertetését lásd például a
+ * [MATEK JÁTÉK] hivatkozásban /Csákány Béla: Diszkrét
+ * matematikai játékok. Polygon, Szeged 1998. 173. oldal./,
+ * de itt az ábra hibás, egy oszloppal told még balra a
+ * bal oldali 4 sejtes négyzetet. A helyes ágyú rajzát
+ * lásd pl. az [ÉLET CIKK] hivatkozásban /Robert T.
+ * Wainwright: Life is Universal./ (Megemlíthetjük, hogy
+ * mindkettõ tartalmaz két felesleges sejtet is.)
+ *
+ * @param   racs    a sejttér ahová ezt az állatkát helyezzük
+ * @param   x       a befoglaló tégla bal felsõ sarkának oszlopa
+ * @param   y       a befoglaló tégla bal felsõ sarkának sora
+ */
+void SejtAblak::sikloKilovo(bool **racs, int x, int y) {
+  
+  racs[y+ 6][x+ 0] = ELO;
+  racs[y+ 6][x+ 1] = ELO;
+  racs[y+ 7][x+ 0] = ELO;
+  racs[y+ 7][x+ 1] = ELO;
+  
+  racs[y+ 3][x+ 13] = ELO;
+  
+  racs[y+ 4][x+ 12] = ELO;
+  racs[y+ 4][x+ 14] = ELO;
+  
+  racs[y+ 5][x+ 11] = ELO;
+  racs[y+ 5][x+ 15] = ELO;
+  racs[y+ 5][x+ 16] = ELO;
+  racs[y+ 5][x+ 25] = ELO;
+  
+  racs[y+ 6][x+ 11] = ELO;
+  racs[y+ 6][x+ 15] = ELO;
+  racs[y+ 6][x+ 16] = ELO;
+  racs[y+ 6][x+ 22] = ELO;
+  racs[y+ 6][x+ 23] = ELO;
+  racs[y+ 6][x+ 24] = ELO;
+  racs[y+ 6][x+ 25] = ELO;
+  
+  racs[y+ 7][x+ 11] = ELO;
+  racs[y+ 7][x+ 15] = ELO;
+  racs[y+ 7][x+ 16] = ELO;
+  racs[y+ 7][x+ 21] = ELO;
+  racs[y+ 7][x+ 22] = ELO;
+  racs[y+ 7][x+ 23] = ELO;
+  racs[y+ 7][x+ 24] = ELO;
+  
+  racs[y+ 8][x+ 12] = ELO;
+  racs[y+ 8][x+ 14] = ELO;
+  racs[y+ 8][x+ 21] = ELO;
+  racs[y+ 8][x+ 24] = ELO;
+  racs[y+ 8][x+ 34] = ELO;
+  racs[y+ 8][x+ 35] = ELO;
+  
+  racs[y+ 9][x+ 13] = ELO;
+  racs[y+ 9][x+ 21] = ELO;
+  racs[y+ 9][x+ 22] = ELO;
+  racs[y+ 9][x+ 23] = ELO;
+  racs[y+ 9][x+ 24] = ELO;
+  racs[y+ 9][x+ 34] = ELO;
+  racs[y+ 9][x+ 35] = ELO;
+  
+  racs[y+ 10][x+ 22] = ELO;
+  racs[y+ 10][x+ 23] = ELO;
+  racs[y+ 10][x+ 24] = ELO;
+  racs[y+ 10][x+ 25] = ELO;
+  
+  racs[y+ 11][x+ 25] = ELO;
+  
+}
+
+		]]></programlisting>
+		<emphasis role="bold">Main.cpp</emphasis> nem kap sok dolgot.Includoljuk QtGui-t QApplication könyvtárat
+		és a sejtablak.h header. Meghívjuk a QApplication-t paraméternként argomentumkat adva neki.
+		Meghívjuk a SejtAblak-ot paraméternként argomentumkat adva neki.
+		<programlisting><![CDATA[
+		#include <QApplication>
+#include "sejtablak.h"
+#include <QDesktopWidget>
+
+int main(int argc, char *argv[])
+{
+  QApplication a(argc, argv);
+  SejtAblak w(100, 75);
+  w.show();
+  
+  return a.exec();
+}
+
+		]]></programlisting>
+		</para>
+	<figure>
+            <title>Terminál</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/7/7.3.terminál.png" scale="60" />
+                </imageobject>
+                <textobject>
+                    <phrase>Terminál</phrase>
+                </textobject>
+            </mediaobject>
+    </figure>
+    <figure>
+            <title>ÉLetjáték</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/7/7.3.futas.png" scale="75" />
+                </imageobject>
+                <textobject>
+                    <phrase>Életjáték</phrase>
+                </textobject>
+            </mediaobject>
+        </figure>
     </section>        
     <section>
         <title>BrainB Benchmark</title>
@@ -64,7 +1164,418 @@
         </para>
         <para>
             Tanulságok, tapasztalatok, magyarázat...
-        </para>            
+        </para>   
+        <para>
+        <programlisting><![CDATA[
+		#ifndef BrainBThread_H
+#define BrainBThread_H
+
+/**
+ * @brief Benchmarking Cognitive Abilities of the Brain with Computer Games
+ *
+ * @file BrainBThread.h
+ * @author  Norbert Bátfai <nbatfai@gmail.com>
+ * @version 6.0.1
+ *
+ * @section LICENSE
+ *
+ * Copyright (C) 2017, 2018 Norbert Bátfai, nbatfai@gmail.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @section DESCRIPTION
+ *
+ */
+
+#include <QThread>
+#include <QSize>
+#include <QImage>
+#include <QDebug>
+#include <sstream>
+#include <QPainter>
+#include <cstdlib>
+#include <ctime>
+#include <vector>
+#include <opencv2/opencv.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+
+class Hero;
+typedef std::vector<Hero> Heroes;
+
+class Hero
+{
+
+public:
+    int x;
+    int y;
+    int color;
+    int agility;
+    int conds {0};
+    std::string name;
+
+    Hero ( int x=0, int  y=0, int color=0, int agility=1,  std::string name ="Samu Entropy" ) :
+        x ( x ), y ( y ), color ( color ), agility ( agility ), name ( name )
+    {}
+    ~Hero() {}
+
+    void move ( int maxx, int maxy, int env ) {
+
+        int newx = x+ ( ( ( double ) agility*1.0 ) * ( double ) ( std::rand() / ( RAND_MAX+1.0 ) )-agility/2 ) ;
+        if ( newx-env > 0 && newx+env < maxx ) {
+            x = newx;
+        }
+        int newy = y+ ( ( ( double ) agility*1.0 ) * ( double ) ( std::rand() / ( RAND_MAX+1.0 ) )-agility/2 );
+        if ( newy-env > 0 && newy+env < maxy ) {
+            y = newy;
+        }
+
+    }
+
+};
+
+class BrainBThread : public QThread
+{
+    Q_OBJECT
+
+    
+     //Norbi
+    cv::Scalar cBg { 247, 223, 208 };
+    cv::Scalar cBorderAndText { 47, 8, 4 };
+    cv::Scalar cCenter { 170, 18, 1 };
+    cv::Scalar cBoxes { 10, 235, 252 };
+    
+
+    /*
+    //Matyi
+    cv::Scalar cBg { 86, 26, 228 };
+    cv::Scalar cBorderAndText { 14, 177, 232 };
+    cv::Scalar cCenter { 232, 14, 103 };
+    cv::Scalar cBoxes { 14, 232, 195 };
+*/
+    
+    Heroes heroes;
+    int heroRectSize {40};
+
+    cv::Mat prev {3*heroRectSize, 3*heroRectSize, CV_8UC3, cBg };
+    int bps;
+    long time {0};
+    long endTime {10*60*10};
+    int delay {100};
+
+    bool paused {true};
+    int nofPaused {0};
+
+    std::vector<int> lostBPS;
+    std::vector<int> foundBPS;
+
+    int w;
+    int h;
+    int dispShift {40};
+
+public:
+    BrainBThread ( int w = 256, int h = 256 );
+    ~BrainBThread();
+
+    void run();
+    void pause();
+    void set_paused ( bool p );
+    int getDelay() const {
+
+        return delay;
+
+    }
+    void setDelay ( int delay ) {
+
+        if ( delay > 0 ) {
+            delay = delay;
+        }
+
+    }
+
+    void devel() {
+
+        for ( Hero & hero : heroes ) {
+
+            hero.move ( w, h, ( h<w ) ?h/10:w/10 );
+
+        }
+
+    }
+
+    int nofHeroes () {
+
+        return  heroes.size();
+
+    }
+
+    std::vector<int> &lostV () {
+
+        return  lostBPS;
+
+    }
+
+    std::vector<int> &foundV () {
+
+        return  foundBPS;
+
+    }
+
+    double meanLost () {
+
+        return  mean ( lostBPS );
+
+    }
+
+    double varLost ( double mean ) {
+
+        return  var ( lostBPS, mean );
+
+    }
+
+    double meanFound () {
+
+        return  mean ( foundBPS );
+
+    }
+
+    double varFound ( double mean ) {
+
+        return  var ( foundBPS, mean );
+
+    }
+
+    double mean ( std::vector<int> vect ) {
+
+        double sum = std::accumulate ( vect.begin (), vect.end (), 0.0 );
+        return  sum / vect.size();
+
+    }
+
+    double var ( std::vector<int> vect, double mean ) {
+
+        double accum = 0.0;
+        std::for_each ( vect.begin (), vect.end (), [&] ( const double d ) {
+            accum += ( d - mean ) * ( d - mean );
+        } );
+
+        return sqrt ( accum / ( vect.size()-1 ) );
+    }
+
+    int get_bps() const {
+
+        return bps;
+
+    }
+
+    int get_w() const {
+
+        return w;
+
+    }
+
+
+    bool get_paused() const {
+
+        return paused;
+
+    }
+
+    int get_nofPaused() const {
+
+        return nofPaused;
+
+    }
+
+    void decComp() {
+
+        lostBPS.push_back ( bps );
+
+        if ( heroes.size() > 1 ) {
+            heroes.pop_back();
+        }
+
+        for ( Hero & hero : heroes ) {
+            if ( hero.agility >= 5 ) {
+                hero.agility -= 2;
+            }
+
+        }
+
+    }
+
+    void incComp() {
+
+        foundBPS.push_back ( bps );
+
+        if ( heroes.size() > 300 ) {
+
+            return;
+
+        }
+
+        /*
+        Hero other ( w/2 + 200.0*std::rand() / ( RAND_MAX+1.0 )-100,
+                     h/2 + 200.0*std::rand() / ( RAND_MAX+1.0 )-100,
+                     255.0*std::rand() / ( RAND_MAX+1.0 ), 11, "New Entropy" );
+                     */
+
+	double rx = 200.0;
+	if(heroes[0].x - 200 < 0)
+	  rx = heroes[0].x;
+	else if(heroes[0].x + 200 > w)
+	  rx = w - heroes[0].x;
+	
+	double ry = 200.0;
+	if(heroes[0].y - 200 < 0)
+	  ry = heroes[0].y;
+	else if(heroes[0].y + 200 > h)
+	  ry = h - heroes[0].y;
+	
+        Hero other ( heroes[0].x + rx*std::rand() / ( RAND_MAX+1.0 )-rx/2,
+                     heroes[0].y + ry*std::rand() / ( RAND_MAX+1.0 )-ry/2,
+                     255.0*std::rand() / ( RAND_MAX+1.0 ), 11, "New Entropy" );
+		
+        heroes.push_back ( other );
+
+        for ( Hero & hero : heroes ) {
+
+            ++hero.conds;
+            if ( hero.conds == 3 ) {
+                hero.conds = 0;
+                hero.agility += 2;
+            }
+
+        }
+
+    }
+
+    void draw () {
+
+        cv::Mat src ( h+3*heroRectSize, w+3*heroRectSize, CV_8UC3, cBg );
+
+        for ( Hero & hero : heroes ) {
+
+            cv::Point x ( hero.x-heroRectSize+dispShift, hero.y-heroRectSize+dispShift );
+            cv::Point y ( hero.x+heroRectSize+dispShift, hero.y+heroRectSize+dispShift );
+
+            cv::rectangle ( src, x, y, cBorderAndText );
+
+            cv::putText ( src, hero.name, x, cv::FONT_HERSHEY_SIMPLEX, .35, cBorderAndText, 1 );
+
+            cv::Point xc ( hero.x+dispShift , hero.y+dispShift );
+
+            cv::circle ( src, xc, 11, cCenter, CV_FILLED, 8, 0 );
+
+            cv::Mat box = src ( cv::Rect ( x, y ) );
+
+            cv::Mat cbox ( 2*heroRectSize, 2*heroRectSize, CV_8UC3, cBoxes );
+            box = cbox*.3 + box*.7;
+
+        }
+
+        cv::Mat comp;
+
+        cv::Point focusx ( heroes[0].x- ( 3*heroRectSize ) /2+dispShift, heroes[0].y- ( 3*heroRectSize ) /2+dispShift );
+        cv::Point focusy ( heroes[0].x+ ( 3*heroRectSize ) /2+dispShift, heroes[0].y+ ( 3*heroRectSize ) /2+dispShift );
+        cv::Mat focus = src ( cv::Rect ( focusx, focusy ) );
+
+        cv::compare ( prev, focus, comp, cv::CMP_NE );
+
+        cv::Mat aRgb;
+        cv::extractChannel ( comp, aRgb, 0 );
+
+        bps = cv::countNonZero ( aRgb ) * 10;
+
+        //qDebug()  << bps << " bits/sec";
+
+        prev = focus;
+
+        QImage dest ( src.data, src.cols, src.rows, src.step, QImage::Format_RGB888 );
+        dest=dest.rgbSwapped();
+        dest.bits();
+
+        emit heroesChanged ( dest, heroes[0].x, heroes[0].y );
+
+    }
+
+    long getT() const {
+
+        return time;
+
+    }
+
+    void finish () {
+
+        time = endTime;
+
+    }
+
+
+signals:
+
+    void heroesChanged ( const QImage &image, const int &x, const int &y );
+    void endAndStats ( const int &t );
+
+};
+
+#endif // BrainBThread_H
+
+		]]></programlisting>
+		<programlisting><![CDATA[
+#include "BrainBThread.h"
+
+BrainBThread::BrainBThread ( int w, int h )
+{
+
+        dispShift = heroRectSize+heroRectSize/2;
+
+        this->w = w - 3 * heroRectSize;
+        this->h = h - 3 * heroRectSize;
+
+        std::srand ( std::time ( 0 ) );
+
+        Hero me ( this->w / 2 + 200.0 * std::rand() / ( RAND_MAX + 1.0 ) - 100,
+                  this->h / 2 + 200.0 * std::rand() / ( RAND_MAX + 1.0 ) - 100, 255.0 * std::rand() / ( RAND_MAX + 1.0 ), 9 );
+
+        Hero other1 ( this->w / 2 + 200.0 * std::rand() / ( RAND_MAX + 1.0 ) - 100,
+                      this->h / 2 + 200.0 * std::rand() / ( RAND_MAX + 1.0 ) - 100, 255.0 * std::rand() / ( RAND_MAX + 1.0 ), 5, "Norbi Entropy" );
+        Hero other2 ( this->w / 2 + 200.0 * std::rand() / ( RAND_MAX + 1.0 ) - 100,
+                      this->h / 2 + 200.0 * std::rand() / ( RAND_MAX + 1.0 ) - 100, 255.0 * std::rand() / ( RAND_MAX + 1.0 ), 3, "Greta Entropy" );
+        Hero other4 ( this->w / 2 + 200.0 * std::rand() / ( RAND_MAX + 1.0 ) - 100,
+                      this->h / 2 + 200.0 * std::rand() / ( RAND_MAX + 1.0 ) - 100, 255.0 * std::rand() / ( RAND_MAX + 1.0 ), 5, "Nandi Entropy" );
+        Hero other5 ( this->w / 2 + 200.0 * std::rand() / ( RAND_MAX + 1.0 ) - 100,
+                      this->h / 2 + 200.0 * std::rand() / ( RAND_MAX + 1.0 ) - 100, 255.0 * std::rand() / ( RAND_MAX + 1.0 ), 7, "Matyi Entropy" );
+
+        heroes.push_back ( me );
+        heroes.push_back ( other1 );
+        heroes.push_back ( other2 );
+        heroes.push_back ( other4 );
+        heroes.push_back ( other5 );
+
+}
+		]]></programlisting>
+		<programlisting><![CDATA[
+			
+		]]></programlisting>
+		<programlisting><![CDATA[
+			
+		]]></programlisting>
+		<programlisting><![CDATA[
+			
+		]]></programlisting>
+		</para>               
     </section>        
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
 </chapter>                
