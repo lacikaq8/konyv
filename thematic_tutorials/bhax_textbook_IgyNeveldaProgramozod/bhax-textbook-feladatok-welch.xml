@@ -431,6 +431,17 @@ szabadit (BINFA_PTR elem)
         Szabadít rész a programunk destruktora.A lefoglalt tárterületet a free() függvényel szabadítjuk fel.De mielőtt a
         szülőtt eltávolítjuk előtte a gyerekeket kell persz.
 		</para>
+		<figure>
+            <title>Futtatás</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/6/6.2.alap.png" scale="60" />
+                </imageobject>
+                <textobject>
+                    <phrase>Futtatás</phrase>
+                </textobject>
+            </mediaobject>
+    </figure>
     </section>        
         
     <section>
@@ -465,6 +476,17 @@ kiir (BINFA_PTR elem)
     }
 }
         ]]></programlisting>
+        <figure>
+            <title>Futtatás</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/6/6.3.posztorder.png" scale="60" />
+                </imageobject>
+                <textobject>
+                    <phrase>Futtatás</phrase>
+                </textobject>
+            </mediaobject>
+		</figure>
         <emphasis role="bold">Preorder Bejárás</emphasis>
         <programlisting><![CDATA[
 void
@@ -488,6 +510,17 @@ kiir (elem->bal_nulla);
 }
 }
         ]]></programlisting>
+        <figure>
+            <title>Futtatás</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/6/6.3.preorder.png" scale="60" />
+                </imageobject>
+                <textobject>
+                    <phrase>Futtatás</phrase>
+                </textobject>
+            </mediaobject>
+    </figure>
         </para>
     </section>        
                         

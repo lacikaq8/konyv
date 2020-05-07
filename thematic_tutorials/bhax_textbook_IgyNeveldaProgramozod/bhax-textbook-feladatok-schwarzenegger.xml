@@ -19,6 +19,98 @@
         <para>
             Tanulságok, tapasztalatok, magyarázat...
         </para>
+        <para>
+			Az MNIST egy olyan program ami a Tensorflow alapot használja. A tensorflow egy mesterséges intelegenciához használt dolog gyakorlatilag a tensorflow keras segitsegevel probal szimulalni egy emberi agyat amelynek sajet neuralis halozata van amivel sajat magat tudja tanitani.Ebben a feladatban a program azt tanulja meg hogy vannak kezzelirt szamok 0-9 ig es a gep feladat hogy egyre nagyobb pontosságal eltalálja. Minél több ideig engedjük futtatni a programot egyre pontosabb lesz a számok felismerésével
+		</para>
+        <para>
+			Na de nem is húzom tovább az időt ugorjunk fejest a forráskódba.
+<programlisting><![CDATA[
+import tensorflow as tf
+]]></programlisting>
+Itt beimporttáljuk a tensorflow deep learning könyvtárat. A tensorok igazából csak több dimenziós array-ek.
+<programlisting><![CDATA[
+mnist = tf.keras.datasets.mnist
+]]></programlisting>
+Itt hívjuk le a az mnist dataset-et ami 28x28 pixal nagyságú kézzel írt számok amiknek az értékük a címük.
+<programlisting><![CDATA[
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+]]></programlisting>
+Kicsomagoljuk a képeket az x_train/x_test -be és a y_train/y_test -be
+<programlisting><![CDATA[
+x_train, x_test = x_train / 255.0, x_test / 255.0
+]]></programlisting>
+Az x_train, x_test és x_train scaling-jét beállítjuk 1-255-re
+<programlisting><![CDATA[
+model = tf.keras.models.Sequential([
+  tf.keras.layers.Flatten(input_shape=(28, 28)),
+  tf.keras.layers.Dense(128, activation='relu'),
+  tf.keras.layers.Dropout(0.2),
+  tf.keras.layers.Dense(10)
+])
+]]></programlisting>
+Modellünket ezen a részen állítjuk be első sorba beállítjuk a Sequential modelre ami egy basic feed-forward model.
+Flatten fogja a kapott 28x28 képeket és "kilapítja" 1x784-re. Következő sorba a neuronokat állítjuk be a mi esetünkbe
+128 layer teljes összeköttetéssel.A harmadik sorba akadályozzuk meg overfitting-et.Utolsó sorba a dense kiértékeli 
+a mátrxiokat bias értékükkel.
+<programlisting><![CDATA[
+loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+]]></programlisting>
+A losst beállítjuk egy alapértelmezett SparseCategoricalCrossentropy módra ami annyit tesz hogy a programunk a pontosságra fog törekedni. 
+<programlisting><![CDATA[
+model.compile(optimizer='adam',
+              loss=loss_fn,
+              metrics=['accuracy'])
+
+]]></programlisting>
+Itt compile-oljuk a modellünket az optimezert az adam-ra állítjuk, loss nak megadjuk a loss_fn-t és a metric-el
+meg beállítjuk mit trackeljen. 
+<programlisting><![CDATA[
+model.fit(x_train, y_train, epochs=5)
+
+model.evaluate(x_test,  y_test, verbose=2)
+
+probability_model = tf.keras.Sequential([
+  model,
+  tf.keras.layers.Softmax()
+])
+
+			]]></programlisting>
+			A model.fit-el megadjuk hogy hányszor fussunk át a modellekkel minnél többet adunk meg annál pontosabb
+			eredményeket fogunk kapni de annál hosszabb lesz a program futási ideje.
+		</para>
+		<figure>
+            <title>Futtatás</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/8/8.1.run.png" scale="60" />
+                </imageobject>
+                <textobject>
+                    <phrase>Futtatás</phrase>
+                </textobject>
+            </mediaobject>
+    </figure>
+    <figure>
+            <title>Eredmény</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/8/8.1.result.png" scale="60" />
+                </imageobject>
+                <textobject>
+                    <phrase>Eredmény</phrase>
+                </textobject>
+            </mediaobject>
+    </figure>
+    <figure>
+            <title>Terhelés</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/8/8.1.terheles.png" scale="50" />
+                </imageobject>
+                <textobject>
+                    <phrase>Terhelés</phrase>
+                </textobject>
+            </mediaobject>
+    </figure>
     </section>        
 
 <!--

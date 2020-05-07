@@ -1166,11 +1166,13 @@ int main(int argc, char *argv[])
             Tanulságok, tapasztalatok, magyarázat...
         </para>   
         <para>
-        <programlisting><![CDATA[
-		#ifndef BrainBThread_H
-#define BrainBThread_H
-
-/**
+			A BrainB-s program fő célja a tehetségkutatás az e-sport terén. Azt vizsgálja, hogy az egyes sportolóknak milyen a reakcióképessége.
+            A program futtatása után annyi a dolgunk, hogy a jobb egérgomb lenyomása alatt kövessük a Samu Entropy nevű karaktert. Ha kellő ideig 
+            tudjuk követni a négyzetben lévő kis teli kört, akkor új játékosok fognak megjelenni a képernyőn. Ha figylemesek vagyunk, akkor egyre 
+            több karakter lesz egy idő után, és természetesen egyre nehezebb is lesz követni Samut. 
+		</para>
+         <programlisting language="c++">
+<![CDATA[/**
  * @brief Benchmarking Cognitive Abilities of the Brain with Computer Games
  *
  * @file BrainBThread.h
@@ -1197,6 +1199,8 @@ int main(int argc, char *argv[])
  * @section DESCRIPTION
  *
  */
+#ifndef BrainBThread_H
+#define BrainBThread_H
 
 #include <QThread>
 #include <QSize>
@@ -1209,9 +1213,16 @@ int main(int argc, char *argv[])
 #include <vector>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/imgproc/imgproc.hpp>]]>
+        </programlisting>
+        <para>
+            Az adott program egy header fájl lesz, az első két sorban definiáljuk is ezt. A defícició menete a fenti C++-os életjátékban 
+            ki lett fejtve. Más header féjlokat hívunk segítségül hozzá, mint látjuk többnyire az összes az OpencCV programra épül, mivel 
+            annak a segítségével tudjuk majd megvalósítani a grafikus felületet.
+        </para>
 
-class Hero;
+        <programlisting language="c++">
+<![CDATA[class Hero;
 typedef std::vector<Hero> Heroes;
 
 class Hero
@@ -1228,9 +1239,17 @@ public:
     Hero ( int x=0, int  y=0, int color=0, int agility=1,  std::string name ="Samu Entropy" ) :
         x ( x ), y ( y ), color ( color ), agility ( agility ), name ( name )
     {}
-    ~Hero() {}
+    ~Hero() {}]]>
+        </programlisting>
+        <para>
+            A class Hero a hősünk (akit követnünk kell) megalkotásában játszik szerepet. A publikus részben lévő deklarálásokra a karakter 
+            megjelenítéséhez van szükség: x, y a méretek (a téglalap szélessége és magasssága), 
+            color a színe, agility a mozgásának a sebessége, name pedig a karakter neve.
+            Ezeket felhasználva jön a konstruktor és a destruktor megadása.
+        </para>
 
-    void move ( int maxx, int maxy, int env ) {
+        <programlisting language="c++">
+<![CDATA[    void move ( int maxx, int maxy, int env ) {
 
         int newx = x+ ( ( ( double ) agility*1.0 ) * ( double ) ( std::rand() / ( RAND_MAX+1.0 ) )-agility/2 ) ;
         if ( newx-env > 0 && newx+env < maxx ) {
@@ -1240,229 +1259,24 @@ public:
         if ( newy-env > 0 && newy+env < maxy ) {
             y = newy;
         }
-
     }
-
-};
-
-class BrainBThread : public QThread
-{
-    Q_OBJECT
-
-    
-     //Norbi
-    cv::Scalar cBg { 247, 223, 208 };
-    cv::Scalar cBorderAndText { 47, 8, 4 };
-    cv::Scalar cCenter { 170, 18, 1 };
-    cv::Scalar cBoxes { 10, 235, 252 };
-    
-
-    /*
-    //Matyi
-    cv::Scalar cBg { 86, 26, 228 };
-    cv::Scalar cBorderAndText { 14, 177, 232 };
-    cv::Scalar cCenter { 232, 14, 103 };
-    cv::Scalar cBoxes { 14, 232, 195 };
-*/
-    
-    Heroes heroes;
-    int heroRectSize {40};
-
-    cv::Mat prev {3*heroRectSize, 3*heroRectSize, CV_8UC3, cBg };
-    int bps;
-    long time {0};
-    long endTime {10*60*10};
-    int delay {100};
-
-    bool paused {true};
-    int nofPaused {0};
-
-    std::vector<int> lostBPS;
-    std::vector<int> foundBPS;
-
-    int w;
-    int h;
-    int dispShift {40};
-
-public:
-    BrainBThread ( int w = 256, int h = 256 );
-    ~BrainBThread();
-
-    void run();
-    void pause();
-    void set_paused ( bool p );
-    int getDelay() const {
-
-        return delay;
-
-    }
-    void setDelay ( int delay ) {
-
-        if ( delay > 0 ) {
-            delay = delay;
-        }
-
-    }
-
-    void devel() {
-
-        for ( Hero & hero : heroes ) {
-
-            hero.move ( w, h, ( h<w ) ?h/10:w/10 );
-
-        }
-
-    }
-
-    int nofHeroes () {
-
-        return  heroes.size();
-
-    }
-
-    std::vector<int> &lostV () {
-
-        return  lostBPS;
-
-    }
-
-    std::vector<int> &foundV () {
-
-        return  foundBPS;
-
-    }
-
-    double meanLost () {
-
-        return  mean ( lostBPS );
-
-    }
-
-    double varLost ( double mean ) {
-
-        return  var ( lostBPS, mean );
-
-    }
-
-    double meanFound () {
-
-        return  mean ( foundBPS );
-
-    }
-
-    double varFound ( double mean ) {
-
-        return  var ( foundBPS, mean );
-
-    }
-
-    double mean ( std::vector<int> vect ) {
-
-        double sum = std::accumulate ( vect.begin (), vect.end (), 0.0 );
-        return  sum / vect.size();
-
-    }
-
-    double var ( std::vector<int> vect, double mean ) {
-
-        double accum = 0.0;
-        std::for_each ( vect.begin (), vect.end (), [&] ( const double d ) {
-            accum += ( d - mean ) * ( d - mean );
-        } );
-
-        return sqrt ( accum / ( vect.size()-1 ) );
-    }
-
-    int get_bps() const {
-
-        return bps;
-
-    }
-
-    int get_w() const {
-
-        return w;
-
-    }
-
-
-    bool get_paused() const {
-
-        return paused;
-
-    }
-
-    int get_nofPaused() const {
-
-        return nofPaused;
-
-    }
-
-    void decComp() {
-
-        lostBPS.push_back ( bps );
-
-        if ( heroes.size() > 1 ) {
-            heroes.pop_back();
-        }
-
-        for ( Hero & hero : heroes ) {
-            if ( hero.agility >= 5 ) {
-                hero.agility -= 2;
-            }
-
-        }
-
-    }
-
-    void incComp() {
-
-        foundBPS.push_back ( bps );
-
-        if ( heroes.size() > 300 ) {
-
-            return;
-
-        }
-
-        /*
-        Hero other ( w/2 + 200.0*std::rand() / ( RAND_MAX+1.0 )-100,
-                     h/2 + 200.0*std::rand() / ( RAND_MAX+1.0 )-100,
-                     255.0*std::rand() / ( RAND_MAX+1.0 ), 11, "New Entropy" );
-                     */
-
-	double rx = 200.0;
-	if(heroes[0].x - 200 < 0)
-	  rx = heroes[0].x;
-	else if(heroes[0].x + 200 > w)
-	  rx = w - heroes[0].x;
-	
-	double ry = 200.0;
-	if(heroes[0].y - 200 < 0)
-	  ry = heroes[0].y;
-	else if(heroes[0].y + 200 > h)
-	  ry = h - heroes[0].y;
-	
-        Hero other ( heroes[0].x + rx*std::rand() / ( RAND_MAX+1.0 )-rx/2,
-                     heroes[0].y + ry*std::rand() / ( RAND_MAX+1.0 )-ry/2,
-                     255.0*std::rand() / ( RAND_MAX+1.0 ), 11, "New Entropy" );
-		
-        heroes.push_back ( other );
-
-        for ( Hero & hero : heroes ) {
-
-            ++hero.conds;
-            if ( hero.conds == 3 ) {
-                hero.conds = 0;
-                hero.agility += 2;
-            }
-
-        }
-
-    }
-
-    void draw () {
-
+};]]>
+        </programlisting>
+        <para>
+            A move függvény mint ahogy a neve is mutatja, a karakterek mozgásban van szerepe, hogy ne legyen annyira 
+            könnyű dolgunk a karakter követésével. A függvény egy mozgást ír le. A mozgás során az x és az y
+            változók új értéket kapnak, persze az új (newx és newy) érétkek a régi x-től és 
+            y-tól, a gyorsaságtól függenek.
+        </para>
+        <para>
+            A program következő részének elején lévő néhány sor a karakter megszerkeztésére szolgálnak, utánna pedig rengeteg 
+            függvénydeklaráció, illetve hogy azok a milyen visszatérítési értéket adnak vissza.
+        </para>
+
+
+        <programlisting language="c++">
+<![CDATA[    void draw () 
+    {
         cv::Mat src ( h+3*heroRectSize, w+3*heroRectSize, CV_8UC3, cBg );
 
         for ( Hero & hero : heroes ) {
@@ -1482,7 +1296,6 @@ public:
 
             cv::Mat cbox ( 2*heroRectSize, 2*heroRectSize, CV_8UC3, cBoxes );
             box = cbox*.3 + box*.7;
-
         }
 
         cv::Mat comp;
@@ -1498,8 +1311,6 @@ public:
 
         bps = cv::countNonZero ( aRgb ) * 10;
 
-        //qDebug()  << bps << " bits/sec";
-
         prev = focus;
 
         QImage dest ( src.data, src.cols, src.rows, src.step, QImage::Format_RGB888 );
@@ -1507,34 +1318,133 @@ public:
         dest.bits();
 
         emit heroesChanged ( dest, heroes[0].x, heroes[0].y );
-
     }
 
-    long getT() const {
-
+    long getT() const 
+    {
         return time;
-
     }
 
-    void finish () {
-
+    void finish () 
+    {
         time = endTime;
-
     }
-
 
 signals:
 
     void heroesChanged ( const QImage &image, const int &x, const int &y );
     void endAndStats ( const int &t );
-
 };
 
-#endif // BrainBThread_H
+#endif // BrainBThread_H]]>
+        </programlisting>
+        <para>
+            Ebben a részben mint ahogy a függvény neve is mondja <function>draw</function> a rajzolásról lesz szó. Mégpedig a hősök és 
+            és maga a megjeleníts kirajzolésában. Újra látjuk az ismerős "Q"-val kezdődő függvényhívásokat, az OpenCV jóvoltából. A 
+            számolások bevitele után ami alapjaán lesz majd a megjelenítés, deklaráljuk a <function>finish</function> függvényt is, 
+            ami megmondja hogy az egész játék addig tart amig a idő eléri az endtime-ot tehát a 10 percet.
+        </para> 
+        <programlisting language="c++">
+<![CDATA[    void millis2minsec ( int millis, int &min, int &sec ) {
 
-		]]></programlisting>
-		<programlisting><![CDATA[
-#include "BrainBThread.h"
+        sec = ( millis * 100 ) / 1000;
+        min = sec / 60;
+        sec = sec - min * 60;
+    }
+
+    bool save ( int t ) {
+
+        bool ret = false;
+
+        if ( !QDir ( statDir ).exists() )
+            if ( !QDir().mkdir ( statDir ) ) {
+                return false;
+            }
+
+        QString name = statDir + "/Test-" + QString::number ( t );
+        QFile file ( name + "-screenimage.png" );
+        if ( file.open ( QIODevice::WriteOnly ) ) {
+            ret = pixmap.save ( &file, "PNG" );
+        }
+
+        QFile tfile ( name + "-stats.txt" );
+        ret = tfile.open ( QIODevice::WriteOnly | QIODevice::Text );
+        if ( ret ) {
+            QTextStream textStremam ( &tfile );
+
+            textStremam << appName + " " + appVersion << "\n";
+            textStremam << "time      : " <<  brainBThread->getT() << "\n";
+            textStremam << "bps       : " <<  brainBThread->get_bps() << "\n";
+            textStremam << "noc       : " <<  brainBThread->nofHeroes() << "\n";
+            textStremam << "nop       : " <<  brainBThread->get_nofPaused() << "\n";
+
+            textStremam << "lost      : "  << "\n";
+            std::vector<int> l = brainBThread->lostV();
+            for ( int n : l ) {
+                textStremam << n << ' ';
+            }
+            textStremam <<  "\n";
+            int m = mean ( l );
+            textStremam << "mean      : " <<  m << "\n";
+            textStremam << "var       : " <<  var ( l, m ) << "\n";
+
+            textStremam << "found     : " ;
+            std::vector<int> f = brainBThread->foundV();
+            for ( int n : f ) {
+                textStremam << n << ' ';
+            }
+            textStremam <<  "\n";
+            m = mean ( f );
+            textStremam << "mean      : " <<  m << "\n";
+            textStremam << "var       : " <<  var ( f, m ) << "\n";
+
+            textStremam << "lost2found: "  ;
+            for ( int n : lost2found ) {
+                textStremam << n << ' ';
+            }
+            textStremam <<  "\n";
+            int m1 = m = mean ( lost2found );
+            textStremam << "mean      : " <<  m << "\n";
+            textStremam << "var       : " <<  var ( lost2found, m ) << "\n";
+
+            textStremam << "found2lost: "  ;
+            for ( int n : found2lost ) {
+                textStremam << n << ' ';
+            }
+            textStremam <<  "\n";
+            int m2 = m = mean ( found2lost );
+            textStremam << "mean      : " <<  m << "\n";
+            textStremam << "var       : " <<  var ( found2lost, m ) << "\n";
+
+            if ( m1 < m2 ) {
+                textStremam << "mean(lost2found) < mean(found2lost)" << "\n";
+            }
+
+            int min, sec;
+            millis2minsec ( t, min, sec );
+            textStremam << "time      : " <<  min  << ":"  << sec << "\n";
+
+            double res = ( ( ( ( double ) m1+ ( double ) m2 ) /2.0 ) /8.0 ) /1024.0;
+            textStremam << "U R about " << res << " Kilobytes\n";
+
+            tfile.close();
+        }
+        return ret;
+    }
+#endif // BrainBWin
+]]>
+        </programlisting>
+        <para>
+            A következő program legfontosabb szerepe abban rejlik amikor deklaráljuk hogy az eredményeket hova mentsük. Ezt is az OpenCV 
+            segítségével csináljuk. Mint látjuk elég hosszú kód foglalja magába a mentés folyamatát. A fájl megnyitása után már tudunk is 
+            írni bele. Láthatjuk benne azt, hogy milyen nevű 
+            és hol található fájlba mentsük majd az eredményket és hogy ezek az eredmények mik legyenek. A fájl egy szöveges fájl lesz, mely 
+            tartalmazni fogja a jéték nevét, a jétékidőt (mivel a 10 perc lejárta előtt is le lehet állítani a játékot az Esc billentyű 
+            segítségével), a "bábuk számát", hogy mikor veszette el felhasználó Samut stb. Az adatok fájlba való beírása után, be kell azt 
+            zárni a close segítségével.
+        </para>
+        <programlisting language="c++">
+<![CDATA[#include "BrainBThread.h"
 
 BrainBThread::BrainBThread ( int w, int h )
 {
@@ -1563,19 +1473,163 @@ BrainBThread::BrainBThread ( int w, int h )
         heroes.push_back ( other2 );
         heroes.push_back ( other4 );
         heroes.push_back ( other5 );
-
+}]]>
+        </programlisting>
+        <para>
+            Ebben a részebn azt deklaráljuk, hogy abban az esetvben ha nagyon ügyesen tudjuk követni Samut, akkor a következőleg megjelenő
+            játékosokat hozzá képest hova helyezzük. Az elhelyezés lényege az hogy minnel kövelebb Samu Entropy-hoz, hiszen így tudja befolyásolni
+            a felhasználó reakció, figyelési és kognitív képességét. 
+        </para> 
+        <programlisting language="c++">
+<![CDATA[void BrainBWin::mousePressEvent ( QMouseEvent *event )
+{
+        brainBThread->set_paused ( false );
 }
-		]]></programlisting>
-		<programlisting><![CDATA[
-			
-		]]></programlisting>
-		<programlisting><![CDATA[
-			
-		]]></programlisting>
-		<programlisting><![CDATA[
-			
-		]]></programlisting>
-		</para>               
+
+void BrainBWin::mouseReleaseEvent ( QMouseEvent *event )
+{
+        //brainBThread->set_paused(true);
+}
+
+void BrainBWin::mouseMoveEvent ( QMouseEvent *event )
+{
+        start = true;
+
+        mouse_x = event->pos().x() -xs - 60;
+        mouse_y = event->pos().y() - ys - 60;
+}
+
+void BrainBWin::keyPressEvent ( QKeyEvent *event )
+{
+        if ( event->key() == Qt::Key_S ) {
+                save ( brainBThread->getT() );
+        } else if ( event->key() == Qt::Key_P ) {
+                brainBThread->pause();
+        } else if ( event->key() == Qt::Key_Q ||  event->key() == Qt::Key_Escape ) {
+                close();
+        }
+}
+
+BrainBWin::~BrainBWin()
+{
+}]]>
+        </programlisting>
+        <para>
+            Ebben a részben az egér kúrzor jelentőségét írjuk le a program számára. Fontos szerepe van hiszen ezzel kell tudjuk szem 
+            előtt tartani a mi Samunkat. Emellett deklrálunk néhány billentyű tevékenységet is: az S billentyű lenyomásával el tudjuk menteni
+            az eddigi teljesítményünket, a P-vel szünetelteni tudjuk a játékot, a Q illetve az Esc gombok lenyomásával pedig ki tudunk
+            lápni az egész játékból.   
+        </para> 
+        <programlisting language="c++">
+<![CDATA[#include <QApplication>
+#include <QTextStream>
+#include <QtWidgets>
+#include "BrainBWin.h"
+
+int main ( int argc, char **argv )
+{
+        QApplication app ( argc, argv );
+
+        QTextStream qout ( stdout );
+        qout.setCodec ( "UTF-8" );
+
+        qout << "\n" << BrainBWin::appName << QString::fromUtf8 ( " Copyright (C) 2017, 2018 Norbert Bátfai" ) << endl;
+
+        qout << "This program is free software: you can redistribute it and/or modify it under" << endl;
+        qout << "the terms of the GNU General Public License as published by the Free Software" << endl;
+        qout << "Foundation, either version 3 of the License, or (at your option) any later" << endl;
+        qout << "version.\n" << endl;
+
+        qout << "This program is distributed in the hope that it will be useful, but WITHOUT" << endl;
+        qout << "ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS" << endl;
+        qout << "FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.\n" << endl;
+
+        qout << QString::fromUtf8 ( "Ez a program szabad szoftver; terjeszthető illetve módosítható a Free Software" ) << endl;
+        qout << QString::fromUtf8 ( "Foundation által kiadott GNU General Public License dokumentumában leírtak;" ) << endl;
+        qout << QString::fromUtf8 ( "akár a licenc 3-as, akár (tetszőleges) későbbi változata szerint.\n" ) << endl;
+
+        qout << QString::fromUtf8 ( "Ez a program abban a reményben kerül közreadásra, hogy hasznos lesz, de minden" ) << endl;
+        qout << QString::fromUtf8 ( "egyéb GARANCIA NÉLKÜL, az ELADHATÓSÁGRA vagy VALAMELY CÉLRA VALÓ" ) << endl;
+        qout << QString::fromUtf8 ( "ALKALMAZHATÓSÁGRA való származtatott garanciát is beleértve. További" ) << endl;
+        qout << QString::fromUtf8 ( "részleteket a GNU General Public License tartalmaz.\n" ) << endl;
+
+        qout << "http://gnu.hu/gplv3.html" << endl;
+
+        QRect rect = QApplication::desktop()->availableGeometry();
+        BrainBWin brainBWin ( rect.width(), rect.height() );
+        brainBWin.setWindowState ( brainBWin.windowState() ^ Qt::WindowFullScreen );
+        brainBWin.show();
+        return app.exec();
+}
+]]>
+        </programlisting>
+        <para>
+            A mainben egy csomo kiíratást látunk, de nem a szokásos módon a cout segítségével, hanem a 
+            qout paranccsal. A kiíratások a program licenszén alapulnak, illetve annak a helyes használatáról 
+            és továbbadásáról.
+        </para>   
+        <programlisting language="c++">
+<![CDATA[QT += widgets core
+CONFIG += c++11 c++14 c++17
+QMAKE_CXXFLAGS += -fopenmp
+LIBS += -fopenmp 
+LIBS += `pkg-config --libs opencv`
+
+TEMPLATE = app
+TARGET = BrainB
+INCLUDEPATH += .
+
+HEADERS += BrainBThread.h  BrainBWin.h
+SOURCES += BrainBThread.cpp  BrainBWin.cpp  main.cpp
+]]>
+        </programlisting>
+        <para>
+            A project fájlnak ugyanaza a szerepe mint az előző programok esetében, 
+            Egy helyre begyüjti azoknak a programoknak a neveit amiket majd használni fog
+            a BranB összehozásához.
+        </para>
+        <para>
+            Fordítás: qmake BrainB.pro
+        </para>
+        <para>
+            make
+        </para>
+        <para>
+            Futtatás: ./BrainB
+        </para>
+        <figure>
+            <title>Futtatás</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/7/7.4.1.png" scale="60" />
+                </imageobject>
+                <textobject>
+                    <phrase>Futtatás</phrase>
+                </textobject>
+            </mediaobject>
+        </figure>
+        <figure>
+            <title>Gameplay</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/7/7.4.2.png" scale="20" />
+                </imageobject>
+                <textobject>
+                    <phrase>Gameplay</phrase>
+                </textobject>
+            </mediaobject>
+        </figure>
+        <figure>
+            <title>Eredmény txt</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="img/7/7.4.3.png" scale="70" />
+                </imageobject>
+                <textobject>
+                    <phrase>Eredmény txt</phrase>
+                </textobject>
+            </mediaobject>
+        </figure>
     </section>        
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
 </chapter>                

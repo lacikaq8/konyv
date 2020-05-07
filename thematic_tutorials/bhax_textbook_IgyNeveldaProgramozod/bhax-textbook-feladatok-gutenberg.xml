@@ -13,8 +13,45 @@
     <section>
         <title>Programozási alapfogalmak</title>
         <para>         
-            <citation>PICI</citation>       
+            <citation>PICI</citation>
         </para>
+        <para>
+			Ha a programozási alapfogalmakról beszélünk akkor fontos említést tenni arról hogy milyen szintekre tudjuk őket osztani.
+			Az első szint az a gépi nyelv mely 0-kból és 1-ből álló kód. Ezt követi az assembly szintü nyelv mely közelebb van az általunk beszélt nyelvhez de még messze
+			a könnyú használattól ezt nevezzük alacsony szintü nyelveknek.A harmadik tipus a magas szintü programozási nyelvek ezek a nyelvek álnak a legközelebb az ember
+			által értelmezhető nyelvekhez tipp angol erősen ajánlott mert angolul vannak általában a programozási nyelvek.
+		</para>
+		<para>
+			A magas szintű programozási nyelven írt programot forrásprogramnak nevezzük. Ennek az létrehozáskor
+			be kell tartani bizonyos az adott nyelvre jellemző formai,szintaktikai szabályokat és a tartalmi, szemantikai
+			szabályokat.
+		</para>
+		<para>
+			A proceszorok saját gépi nyelvvel rendelkeznek, és csak az ezen írt programokat képesek végrehajtani.
+			Tehát a forráskódokat át kell alakítani olyan kódra amit a számítógépünk is megért. Erre két módunk is van
+			az egyik az analóg a másik megoldás pedig az interpreteres.
+		</para>
+		<para>
+			A fordítóprogram egyetlen egységként kezeli a forrást, és lexikai, szintaktikai, szemantikai elemzést hajt
+			végre, majd legenerálja a gépi kódot. Ez még nem futtatható, ebből a kapcsolatszerkesztő állít elé futtaható
+			programot, melyet a betöltő behelyez a tárba, és a futtató rendszer felügyeli a futását. Bizonyos esetekben
+			lehetőség van arra, hogy nem nyelvi elemeket használjunk egy forrásprogramban, de ilyenkor szükség van
+			egy előfordítóra is.
+		</para>
+		<para>
+			Az interpreteres megoldás nem készít tárgykódot, viszont a fentebb említett 3 elemzést végrehajtja. Utasításonként sorra veszi a forrásprogramot, értelmezi, és végrehajtja. tehát rögtön kapjuk meg eredményt.
+			Bizoynos nyelvek esetén mind az interpreteres, mind a fordítóprogramos megoldást alkalmazzák.
+		</para>
+		<para>
+			Minden programozási nyelvhez tartozik egy hivatkozási nyelv, mely a szemantikai és szintaktikai szabályokat 
+			határozza meg. Emellett léteznek még implementációk. Az egyes rendszereken több fordítóprogram
+			és iterpreter létezik, és ennek következtében az implementációk nem kompatiblisek egymással, ez pedig
+			meggátolja a programok tökéletes hordozását a platformok között.
+		</para>
+		<para>
+			A programozó dolgának megkönnyítése érdekében létrejöttek az integrált grafikus felületek(IDE), melyek
+			egy csomagban tartalmaznak minden szükséges eszközt a programok megírásához, és futtatásához.
+		</para>
     </section>        
     <section>
         <title>Programozás bevezetés</title>
@@ -24,11 +61,83 @@
         <para>
             Megoldás videó: <link xlink:href="https://youtu.be/zmfT9miB-jY">https://youtu.be/zmfT9miB-jY</link>
         </para>        
+        <para>
+            <emphasis role="bold">A C nyelv utasításai</emphasis>
+        </para>
+        <para>
+            Utasítások és blokkok: A nyelv bármelyk kifejezése utasítássá válik ha pontosvesszőt teszünk a végére. Akárhány utasítást összefoglalhatunk egyetlen összetett utasításba a kapcsoszárójelek segítségével(pl.: while vagy if utáni több utasítás).
+        </para>
+        <para>
+            Az if-else utasítás: Döntést, választást írhatunk le a segítségével. Az else rész opcionális, azaz elhagyható. ha az if után zárójelben lévő kifejezés teljesül, akkor az ő utána következő utasítások, vagy blokkba foglalt összetett utasítás fog lezajlani, egyébként pedig az else kulcsszót követő utasítások lépnek érvénybe.
+            Előfordulhat hogy 'egyébként' semmint nem kell tennünk, ilyenkor hagyható el az else. Ha több if utasítás van egymásba ágyazva nem mindig egyértelmű hova tartoznak az else-k: mindig a hozzájuk legközelebbi if-hez.
+        </para>
+        <para>
+            Az else-if kifejezés: Több feltételvizsgálatot köthetünk össze, melyeket sorban vizsgálunk és értékelünk ki. Egy if-else if-else láncból mindig csak egy utasítás vagy összetett utasítás teljesül. Az else itt is elhagyható
+        </para>
+        <para>
+            A switch utasítás: A többirányú programelágaztatás egyik eszköze. Megvizsgálja hogy egy változó értéke megegyezik e több állandó értékkel és ennek megfelelően hajtja végre a megfelelő utasításokat.
+            A switch után megadott változó értékét az utána felsorolt (case: )-eket követő értékekkel hasonlítja össze és hajtja végre a hozzá kapcsolódó utasításokat ha megyegyeznek.
+            Megadható egy default: opció, ami akkor lép érvénybe ha nem volt egyezés.
+        </para>
+        <para>
+            A while és a for utasítások: ciklusok, a while az őt követő zárójelben lévő kifejezést vizsgálja, ha értéke nem 0 akkor végrehajtja az utasítást, majd újra tesztel, és így tovább.
+        </para>
+        <para>
+            a for utasítást követő zárójel általában 3 utasítást tartalmaz, ezekből az első és a harmadik értékadás, a második pedig függvényhívás vagy relációs kifejezés.
+            Ilyen ciklussal adott számú alkalommal futtathatjuk le a ciklusunkat.
+        </para>
+        <para>
+            A do-while utasítás: szintén cilus, azonban ez egyszer mindenképp lefut, ha a végén lévő while feltétel utáni kifejezés 0 értékű akkor is.
+            Első lefutása után azonban csak a feltétel vizsgálatának függvényében fut le többször.
+        </para>
+        <para>
+            A break utasítás: Ezen utasítás hatására a program kilép a legbelső ciklusból(for, while, do-while) vagy switchből.
+        </para>
+        <para>
+            A continue utasítás: Olyan utasítás ami csak ciklusokra értelmezhető, switchre nem. A ciklus következő iterációjára ugrik.
+        </para>
+        <para>
+            A goto utasítás: Segítségével a program egy adott címkéjű részére ugorhatunk a végrehajtásban. Ritkán használatos, általában egyszerűen helyettesíthető.
+        </para>
     </section>        
     <section>
         <title>Programozás</title>
         <para>                
             <citation>BMECPP</citation>
         </para>
+        <para>
+            <emphasis role="bold">A C++ nem objektum orientált újdonságai</emphasis>
+        </para>
+        <para>
+            Ilyen újdonságok például:
+        </para>
+        <para>
+            Függvény paraméterek és visszatérési érték: C++-ban meg kell adni paraméterként a void kulcsszót, ha nem szeretnénk paramétert(C-ben elég üresen hagyni), valamint ha C-ben nem írunk visszatérési értéket a program int-et vissza alapértelmezetten, C++-ban viszont ilyenkor a program hibás lesz.
+        </para>
+        <para>
+            A main függvény: paraméterlistája vagy üres, vagy tartalmazza az argc változót és az argv vektort, a return 0; elhagyható, ugyanis ha nem írjuk ki sikeres futás esetén alapértelmezett 0-val tér vissza a program.
+        </para>
+        <para>
+            A bool típus: Megadásra kerül a bool típus. Automatikus konverzió bool és int között. C++ kulcsszavak: bool, true, false.
+        </para>
+        <para>
+            C stílusú több bájtos stringek: használatukhoz nem kell #include-olni semmit, beépített típus lett.
+        </para>
+        <para>
+            Változódeklaráció mint utasítás: Változódeklaráció akárhol állhat ahol utasítás. Változót mindig csak akkor hozzunk létre és adjunk neki kezdőértéket, amikor használni fogjuk.
+        </para>
+        <para>
+            Függvénynevek túlterhelése: C++-ban túlterhelhetünk függvényeket, azaz ugyan azon nevű függvény többször is létezhet feltéve ha más a paraméterlistája(visszatérési érték különbözősége nem számít).
+            Ezeket a függvényeket úgy különbözteti meg a fordító, hogy a neveket kiegészíti az argumentumokból generált elő vagy utótaggal. Ezt a technológiát "névelferdítésnek" nevezzük.
+            Ha egy C függvény szerenénk C++ programunkban használni akkor ezt a fordítónak az extern "C" kifejezéssel jelezhezjük.
+        </para>
+        <para>
+            Alapértelmezett függvényargumentumok: C++-ban függvényeink paraméteerinek megadhatunk alapértelmezett értékeket, amiket a metódus akkor használ ha nem adtunk meg neki adott paraméterként semmit.
+            Itt figyelembe kell vennünk néhány szabályt: alapértelmezett értéket az arugmentumlistában hátulról előre haladva folytatólagosan adhatunk, hívás során az argumentumok ugyan ilyen sorrendben hagyhatóak el, valamnt alapértelmezett érték nem adható meg a egyidejűleg a függvénydefiníció és a függvénydeklaráció helyén.
+        </para>
+        <para>
+            Paraméterátadás referenciatípussal: A C-vel ellentétben, ahol érték szerinti paraméterátadás történik, a C++-ban hivatkozás szerinti megoldás van megvalósítva a függvényeknél. Ezt akkor alkalmazzuk amikor módosítani is szeretnénk az adott paramétert, nem csak felhasználni. Ilyenkor a paraméterlistában a kívánt paraméter megtoldjuk egy 'és' jellel, ezzel jelölve azt, hogy a paraméter referenciáját szeretnénk felhasználni.
+        </para>
+
     </section>        
 </chapter>                
