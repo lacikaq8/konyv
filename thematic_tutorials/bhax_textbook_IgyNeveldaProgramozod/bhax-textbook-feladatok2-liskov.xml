@@ -1,0 +1,475 @@
+<chapter xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" version="5.0" xml:lang="hu">
+    <info>
+        <title>Helló, Liskov!</title>
+        <keywordset>
+            <keyword/>
+        </keywordset>
+    </info>
+
+    <section>
+        <title>Liskov helyettesítés sértése</title>
+        <para>
+            Írjunk olyan OO, leforduló Java és C++ kódcsipetet, amely megsérti a Liskov elvet! Mutassunk rá a
+            megoldásra: jobb OO tervezés.
+        </para>
+        <para>
+            <link xlink:href="https://arato.inf.unideb.hu/batfai.norbert/UDPROG/deprecated/Prog2_1.pdf">https://arato.inf.unideb.hu/batfai.norbert/UDPROG/deprecated/Prog2_1.pdf(93-99 fólia)</link>
+            (számos példa szerepel az elv megsértésére az UDPROG repóban, lásd pl. source/binom/BatfaiBarki/madarak/)
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            A Liskov elv azt mondja ki, hogy minden osztálynak helyettesíthetőnek
+           kell lennie a leszármazottaival anélkül, hogy a program helyes működése
+           megváltozna.
+        </para>
+        <para>
+            A következő példa egy matematikai problémát tartalmaz, ami jól szemlélteti
+            az előzőekben megbeszélt szabály hiányát.
+            <programlisting language="c++"><![CDATA[
+#include <iostream>
+
+using namespace std;
+
+class Negyszog{
+public:
+    Negyszog(int a_oldal, int b_oldal, int c_oldal, int d_oldal){
+        a = a_oldal;
+        b = b_oldal;
+        c = c_oldal;
+        d = d_oldal;
+    }
+    int a;
+    int b;
+    int c;
+    int d;
+    int kerulet;
+    int terulet;
+};
+
+class Negyzet:public Negyszog{
+public:
+    Negyzet(int a_oldal, int b_oldal, int c_oldal, int d_oldal):Negyszog(a_oldal, b_oldal, c_oldal, d_oldal){
+    }
+};
+
+class Teglalap:public Negyzet{
+public:
+    Teglalap(int a_oldal, int b_oldal, int c_oldal, int d_oldal):Negyzet(a_oldal, b_oldal, c_oldal, d_oldal){
+    }
+};
+
+void setKeruletTerulet(Negyzet &negyzet){
+    negyzet.kerulet = negyzet.a * 4;
+    negyzet.terulet = negyzet.a * negyzet.a;
+}
+
+int main()
+{
+    Negyzet& negyzet = *new Negyzet(5,5,5,5);;
+    Teglalap& teglalap = *new Teglalap(4,5,4,5);
+
+    setKeruletTerulet(negyzet);
+    setKeruletTerulet(teglalap);
+
+    cout << "Téglalap kerülete: " << teglalap.kerulet  << ", Négyzet kerülete: " << negyzet.kerulet << endl;
+}
+
+            ]]></programlisting>
+            Először van egy <function>Negyszog</function> osztályunk. Ebből származtatjuk a
+            <function>Negyzet</function> osztályt. Viszont a hiba az, hogy
+            minden négyzet téglalap, de nem minden téglalap négyzet. A <function>Negyzet</function> osztályból
+             akarjuk a <function>Teglalap</function> osztályt származtatni. Ezek után létrehozunk egy függvényt, mely egy
+            négyzet kerületét és területét számolja ki. Viszont az objektum orientált nyekvekben az ős helyén
+            használható a gyermek is. Vagyis a <function>setKeruletTerulet</function> függvényt meg tudjuk hívni
+            egy <function>Teglalap</function> objektummal is. Ami nyilvánvalóan hibás eredményhez vezet, ha 
+            olyan táglalapot adunk át, ami nem négyzet.
+        </para>
+        <para>
+            Most következik a Java-s verzió.
+            <programlisting language="java"><![CDATA[
+class LiskovSert{
+    public static class Négyszög{
+        public int a;
+        public int b;
+        public int c;
+        public int d;
+
+        public Négyszög(int a_oldal, int b_oldal, int c_oldal, int d_oldal){
+            a = a_oldal;
+            b = b_oldal;
+            c = c_oldal;
+            d = d_oldal;
+        }
+
+        public int kerület;
+        public int terület;
+    }
+    
+    public static class Négyzet extends Négyszög{
+        public Négyzet(int a_oldal, int b_oldal, int c_oldal, int d_oldal){
+            super(a_oldal, b_oldal, c_oldal, d_oldal);
+        }
+    }
+    
+    public static class Téglalap extends Négyzet{
+        public Téglalap(int a_oldal, int b_oldal, int c_oldal, int d_oldal){
+            super(a_oldal, b_oldal, c_oldal, d_oldal);
+        }
+    }
+
+    public static class Program{
+        public void setKerületTerület(Négyzet negyzet){
+            negyzet.kerület = negyzet.a * 4;    
+            negyzet.terület = negyzet.a * negyzet.a;
+        }
+    }   
+
+    public static void main(String[] args){
+        Program program = new Program();
+        Négyzet negyzet = new Négyzet(5,5,5,5);;
+        Téglalap teglalap = new Téglalap(4,5,4,5);
+        
+        program.setKerületTerület(negyzet);
+        program.setKerületTerület(teglalap); 
+
+        System.out.println("Téglalap kerülete: " + teglalap.kerület + ", Négyzet kerülete: "+ negyzet.kerület); 
+        
+    }
+} 
+            ]]></programlisting>
+            A különbség az, hogy a <function>setKerületTerület</function> függvény a <function>Program</function>
+            osztálynak egy tagfüggvénye. 
+        </para>
+    </section>        
+
+    <section>
+        <title>Szülő-gyerek</title>
+        <para>
+            Írjunk Szülő-gyerek Java és C++ osztálydefiníciót, amelyben demonstrálni tudjuk, hogy az ősön
+            keresztül csak az ős üzenetei küldhetőek!
+        </para>
+        <para>
+            <link xlink:href="https://arato.inf.unideb.hu/batfai.norbert/UDPROG/deprecated/Prog2_1.pdf">https://arato.inf.unideb.hu/batfai.norbert/UDPROG/deprecated/Prog2_1.pdf(98. fólia)</link>
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+           <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            A feladat lényege az lenne, hogy bemutassuk, az ős referenciáin vagy pointerein keresztül csak az ős
+            függvényeit tudjuk meghívni.
+            A C++-os megoldás a következő.
+            <programlisting><![CDATA[
+#include <iostream>
+
+using namespace std;
+
+class Vehicles{
+public:
+//    void setNumberOfWheels(){
+//        wheels = 0;
+//    }
+    int wheels = 0;
+};
+
+class Cars: public Vehicles{
+public:
+    void setNumberOfWheels(){
+        wheels = 4;
+    }
+};
+
+int main()
+{
+    Vehicles &vehicle = *new Cars();
+
+    vehicle.setNumberOfWheels(); //Hiba, az ős nem tudja elérni a gyermek metódusait.
+
+    cout << "The number of wheels: " << vehicle.wheels << endl;
+}
+            ]]></programlisting>
+            Van egy <function>Vehicles</function> osztályunk, aminek a 
+            <function>wheels</function> változójában a kerekek számát tároljuk.
+            A kerekek száma alapértelmezetten nulla. A <function>Cars</function>
+            ennek az osztálynak a leszármazotja. Tartalmaz egy függvényt, amely
+            beállítja a kerekek számát 4-re. A <function>main</function> függvényben 
+            deklarálunk egy <function>Vehicle</function> osztály referenciát, és 
+            értékül egy <function>Cars</function> osztályreferenciát adunk. Ha a 
+            <function>vehicle</function> referencián keresztül meghívjuk a <function>setNumberOfWheels</function>
+            függvényt, akkor hibát dob a program, nem találja a függvény definícióját.
+        </para>
+        <para>
+            Java nyelven a következőképpen néz ki:
+            <programlisting language="java"><![CDATA[
+public class Vehicles{
+//  public void setNumberOfWheels(){
+//      wheels = 0;
+//  }
+    public int wheels;
+
+    public static class Cars extends Vehicles{
+            public void setNumberOfWheels(){
+                wheels = 4;
+            }
+    }
+
+    public static void main(String[] args)
+    {
+            Vehicles vehicle = new Cars();
+
+        vehicle.setNumberOfWheels(); //Hiba, mert az ős a leszármazott metódusait nem éri el.
+
+        System.out.println("The number of wheels: "+vehicle.wheels);
+    }
+}
+            ]]></programlisting>
+        </para>
+    </section>
+    
+    <section>
+        <title>Anti OO</title>
+        <para>
+            A BBP algoritmussal <link xlink:href="www.tankonyvtar.hu/hu/tartalom/tkt/javat-tanitok-javat/apbs02.html#pi_jegyei">www.tankonyvtar.hu/hu/tartalom/tkt/javat-tanitok-javat/apbs02.html#pi_jegyei</link>
+            a Pi hexadecimális kifejtésének a 0. pozíciótól számított 10<superscript>6</superscript>,
+            10<superscript>7</superscript>, 10<superscript>8</superscript> darab
+            jegyét határozzuk meg C, C++, Java és C# nyelveken és vessük össze a futási időket! 
+        </para>
+        <para>
+            <link xlink:href="https://www.tankonyvtar.hu/hu/tartalom/tkt/javat-tanitok-javat/apas03.html#id561066">https://www.tankonyvtar.hu/hu/tartalom/tkt/javat-tanitok-javat/apas03.html#id561066</link>
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+           <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            A alábbi táblázatban láthatóak az eredmények:
+        </para>
+        <mediaobject>
+            <imageobject>
+                <imagedata fileref="img/liskov/tablazat.png" scale="70" />
+            </imageobject>
+        </mediaobject>
+        <para>
+         A mérés alapján a Java került ki győztesnek, nem sokkal lemaradva a C#. A C/C++ meglepő módon jelentősen lassabban teljesített.
+        </para>
+    </section>
+    
+    <section>
+        <title>
+            <emphasis role='cadiumgreen'>deprecated - Hello, Android!</emphasis>
+        </title>
+        <para>
+            Élesszük fel a <link xlink:href="https://github.com/nbatfai/SamuEntropy/tree/master/cs">https://github.com/nbatfai/SamuEntropy/tree/master/cs</link> projektjeit és vessünk össze
+            néhány egymásra következőt, hogy hogyan változtak a források!
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+    </section>
+    
+    <section>
+        <title>Hello, Android!</title>
+        <para>
+            Élesszük fel az SMNIST for Humans projektet!
+            <link xlink:href="https://gitlab.com/nbatfai/smnist/tree/master/forHumans/SMNISTforHumansExp3/app/src/main">https://gitlab.com/nbatfai/smnist/tree/master/forHumans/SMNISTforHumansExp3/app/src/main</link>
+            Apró módosításokat eszközölj benne, pl. színvilág.
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+    </section>
+    
+    <section>
+        <title>
+            <emphasis role="red">Hello, SMNIST for Humans!</emphasis>
+        </title>
+        <para>
+            Fejleszd tovább az SMNIST for Humans projektet SMNIST for Anyone emberre szánt appá! Lásd
+            az smnist2_kutatasi_jegyzokonyv.pdf-ben a részletesebb hátteret!
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+    </section>
+                  
+    <section>
+        <title>Ciklomatikus komplexitás</title>
+        <para>
+            Számoljuk ki valamelyik programunk függvényeinek ciklomatikus komplexitását! Lásd a fogalom
+            tekintetében a <link xlink:href="https://arato.inf.unideb.hu/batfai.norbert/UDPROG/deprecated/Prog2_2.pdf">https://arato.inf.unideb.hu/batfai.norbert/UDPROG/deprecated/Prog2_2.pdf</link> 
+            (77-79 fóliát)!
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            A ciklomatikus komplexitás, másnéven McCabe-komplexitás a program döntési komplexitását adja meg.
+            A képlet a következő: <function>M = E - N + 2P</function>, ahol E a gráf éleinek a száma, N a csúcsok száma és P az összefüggő komponensek száma.
+            Tehát minél több elágazás van a program vezérlésében, annál nagyobb értéket kapunk.
+        </para>
+        <para>
+            Az a program, aminek ki fogjuk számolni a ciklomatikus komplexitását, a BBP program lesz. Ehhez egy Maven projektet hozunk létre,
+            és abba beleágyazzuk a programunkat. Ez abból áll, hogy a Netbeans-ben létrehozunk egy új Maven projectet, és ahhoz hozzáadjuk a 
+            PiBBP.java osztályt. Majd az <function>mvn</function> paranccsal lehet felépíteni a <function>.class</function> fájlt. 
+            Fontos, hogy az <function>mvn</function> parancsot ott futassuk, ahol a <filename>pom.xml</filename> található.
+        </para>
+        <caution>
+            <title>Maven használata</title>
+            <para>
+                Telepíteni a <function>sudo apt install maven</function> paranccsal lehet.
+            </para>
+        </caution>
+        <para>
+        Emellett még szükségünk lesz a SonarQuebe Community Edition programra, amely elemezni fogja a forrásunkat.
+        Ha letöltöttük, akkor futtani kell a <filename>sonar.sh start</filename> parancsot a terminálba, ez
+        egy szervert indít el, mely a <link xlink:href="http://localhost:9000 ">http://localhost:9000 </link>
+        linken érhető el. Jelentkezzünk be admin/admin-nal, majd hozzunk létre egy új projektet. 
+        A végén megkapjuk a parancsot, amivel a SonarQube leellenőrzi a kódot, és az eredmények megnézhetők a weboldalon.
+        </para>
+    </section> 
+
+    <section>
+        <title>
+            EPAM: Interfész evolúció Java-ban
+        </title>
+        <para>
+            Mutasd be milyen változások történtek Java 7 és Java 8 között az interfészekben. Miért volt erre szükség, milyen problémát vezetett ez be?
+        </para>
+        <para>
+            Java 8 újdonságok:    
+        </para>
+        <para>
+            -default ás static interfész metódusok behozása
+        </para>
+        <para>
+            A default metódusok lehetővé teszik új metódusok hozzáadását létező interfészekhez anélkül, hogy megtörné azon interfészek régebbi verzióihoz készült kóddal való kompatibilitást.
+            A default és absztrakt metódusok közötti különbség az, hogy az absztrakt metódusokat kötelező implementálni, de a default metódusokat nem.
+        </para>
+        <programlisting language="java"><![CDATA[
+package asd;
+
+public interface DefaultExample {
+    default String notRequired() {
+        return "Default implementation";
+    }
+} 
+public class DefaultExampleImpl implements DefaultExample {
+
+} 
+public class DefaultExampleImpl2 implements DefaultExample {
+    @Override
+    public String notRequired() {
+        return "Overridden implementation";
+    }
+
+} 
+            ]]></programlisting>
+        <para>
+            A DefaultExample interfész deklarál egy notRequired() default metódust a metódus definíciójában szereplő default kulcsszóval. Az egyik leszármazott osztály, a DefaultExampleImpl implementálja ezt az interfészt, de meghagyja a default metódus alapértelmezett implementációját. Egy másik, a DefaultExampleImpl2 felülírja a default implementációját a sajátjával.
+        </para>
+        <para>
+            Lambda bevezetése
+        </para>
+        <para>
+            A lambda kifejezések bevezetése a Java 8 egyik legjobban várt és legnagyobb újdonsága. Magát a fogalmat többféleképpen magyarázzák el különböző bemutatók és tananyagok. Egyesek szerint ez végre egy módszer arra, hogy funkcionális programozási stílust vezessünk be az objektum-orientált Java-ba. Más megközelítés szerint lehetővé teszi, hogy függvényeket használjunk metódusparaméterként vagy kódot kezeljünk adatként. Egy harmadik elképzelés szerint - és ezt az utat járja az Oracle oktatási leírása is - a megismerés legegyszerűbb első lépése, ha azt mondjuk, hogy anonim belső osztályokat lehet kiváltani lambda kifejezésekkel. (Emellett nem elhanyagolható módon hatékonnyá és egyszerűbbé teszi a modern többmagos processzorok kihasználását is.)
+        </para>
+        <para>
+            Syntaxisa
+            <programlisting language="java"><![CDATA[
+                Paraméterlista  Nyíl token     Törzs
+                (int x, int y)      ->          x+y
+            ]]></programlisting>
+        </para>
+    </section>
+
+    <section>
+        <title>
+            EPAM: Liskov féle helyettesíthetőség elve, öröklődés
+        </title>
+        <para>
+
+        </para>
+    </section>
+
+    <section>
+        <title>
+            EPAM: Interfész, Osztály, Absztrak Osztály
+        </title>
+        <para>
+            Mi a különbség Java-ban a Class, Abstract Class és az Interface között? Egy tetszőleges példával / példa kódon keresztül mutasd be őket és hogy mikor melyik koncepciót célszerű használni.
+        </para>
+        <para>Interfész: -Minden metódus benne absztrakt. -Minden eleme public. Ha használni szeretnénk az interfészt akkor kreálnunk kell egyet majd a benne létrehozott absztract metódusokat definiálni kell a programban.</para>
+        <para>Absztrak Osztály: -Tartalmazhat konkrét metódusokat. -Lehetnek benne a tagok public, private, protected és default. Örököltetünk kell a használatához.</para>
+        <para>Osztály: -Jellemzni a cselekvéseit és az attribútumait egy obijectumnak. -Absztract és konkrét metódusokat is tárolhat. -Lehet public, private, protected és default.</para>
+        <programlisting language="java"><![CDATA[
+                public class Tester {
+   public static void main(String[] args) {
+
+      Car car = new Car();
+      car.setFuel();
+      car.run();
+      Truck truck = new Truck();
+      truck.setFuel();
+      truck.run();
+   }
+}
+interface Vehicle {
+   public void setFuel();
+   public void run();
+}
+class Car implements Vehicle {
+   public void setFuel() {
+      System.out.println("Car: Tank is full.");
+   }
+   public void run() {
+      System.out.println("Car: Running.");
+   }
+}
+abstract class MotorVehicle {
+   public void setFuel() {
+      System.out.println("MotorVehicle: Tank is full.");
+   }
+   abstract public void run();
+}
+class Truck extends MotorVehicle {
+   public void run() {
+      System.out.println("Truck: Running.");
+   }
+}
+            ]]></programlisting>
+    </section>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+</chapter>                

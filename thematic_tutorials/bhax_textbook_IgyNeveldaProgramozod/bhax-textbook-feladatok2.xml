@@ -15,10 +15,26 @@
         
     </partintro>
     
+     <xi:include href="bhax-textbook-feladatok2-bernerslee.xml">
+        <xi:fallback>
+            <para>
+                <emphasis>XInclude: bhax-textbook-feladatok2-bernerslee.xml file not found</emphasis>
+            </para>
+        </xi:fallback>
+    </xi:include>   
+
     <xi:include href="bhax-textbook-feladatok2-arroway.xml">
         <xi:fallback>
             <para>
-                <emphasis>XInclude: bhax-textbook-motto.xml file not found</emphasis>
+                <emphasis>XInclude: bhax-textbook-feladatok2-arroway.xml file not found</emphasis>
+            </para>
+        </xi:fallback>
+    </xi:include>
+
+    <xi:include href="bhax-textbook-feladatok2-liskov.xml">
+        <xi:fallback>
+            <para>
+                <emphasis>XInclude: bhax-textbook-feladatok2-liskov.xml file not found</emphasis>
             </para>
         </xi:fallback>
     </xi:include>     
