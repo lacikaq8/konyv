@@ -1,0 +1,279 @@
+<chapter xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" version="5.0" xml:lang="hu">
+    <info>
+        <title>Helló, Mandelbrot!</title>
+        <keywordset>
+            <keyword/>
+        </keywordset>
+    </info>
+
+    <section>
+        <title>Reverse engineering UML osztálydiagram</title>
+        <para>
+            UML osztálydiagram rajzolása az első védési C++ programhoz. Az osztálydiagramot a forrásokból
+            generáljuk (pl. Argo UML, Umbrello, Eclipse UML) Mutassunk rá a kompozíció és aggregáció
+            kapcsolatára a forráskódban és a diagramon, lásd még: <link xlink:href="https://youtu.be/Td_nlERlEOs">https://youtu.be/Td_nlERlEOs</link>
+        </para>
+        <para>
+            <link xlink:href="https://arato.inf.unideb.hu/batfai.norbert/UDPROG/deprecated/Prog1_6.pdf">https://arato.inf.unideb.hu/batfai.norbert/UDPROG/deprecated/Prog1_6.pdf (28-32 fólia)</link>
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            Az UML (Unified Modelling Language) egy szabványos általános célú modellező nyelv.
+            Az UML nyelv egy kicsi részével az objektumorientált programozási nyelvekkel készített
+            programok ábrázolásával fogunk megismerkedni. 
+        </para>
+        <para>
+            Ahogy a feladat szövegében is látható sok fajta fejlesztői környezet található, viszont mi most az Umbrello-t fogjuk használni. Az Umbrello elérhető Windows-ra és Unix alapú rendszerekre is. Nekünk a legfontosabb, hogy lehetővé teszi azt, hogy forrásokból generáljunk UML-t és ugyan ezt fordítva.
+        </para>
+        <para>
+            A feladat szövege alapján a <filename>z3a7.cpp</filename> forrásból kell UML-t generálni. Ehhez az Umbrello <function>Kódimportálási varázslójára</function> lesz szükségünk. Itt ki kell választani, hogy milyen kódot szeretnénk importálni. A C++-nál alapértelmezetten csak <function>header</function> állományokat 
+            keres, ezért ki kell egészíteni a keresést <function>cpp</function> kiterjesztéssel. Majd ezek után beimportáljuk a fájlt. Majd oldalt a fastruktúra nézetből ki kell választani a class neveket és behúzni az osztálydiagramba. Itt még nem ér véget a megpróbáltatásunk mivel még pár dolgot módosítanunk kell.
+        </para>
+        <para>
+            Fontos dolog megemlíteni a kompozíciót és aggregációt. Mind a kettő az asszociációnak egy speciális fajtája.
+            Az aggregáció tartalmazást jelöl. Jele az ábrán az üres rombusz.
+            A kompozíció teli rombusszal van jelölve, lényegében erős aggregációnak is nevezhető.
+            Fontos megkötések a kompozíció  esetén, hogy a tartalmazott objektum nem lehet megosztva több objektum között. Emellett a tartalmazó és a tartalmazott objektum együtt
+            jön létre, ennek következtében a tartalmazott objektumért a tartalmazó felel. A tartalmazó objektum destruktorábnak kell tartalmaznia a tartalmazott 
+            objektum felszabadításához szükséges kódot. Kompozícióra példa a <function>gyoker</function> a mi feladatunkban.
+        </para>
+    </section>        
+
+    <section>
+        <title>Forward engineering UML osztálydiagram</title>
+        <para>
+            UML-ben tervezzünk osztályokat és generáljunk belőle forrást!
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            Ebben az esetben azt fogjuk csinálni, hogy az előző feladatban létrehozott diagramból fogunk kódot
+            generálni. Ezt úgy tehetjük meg, hogy a <function>Kódgenerálási varázslót</function> használjuk.
+            Valójában az történik, hogy a kódgenerátor legenerálja az osztálydeklarációt, a megadott és
+            az asszociációkat megvalósító tagváltozókat, valamint a függvények fejlécét, de persze a
+            törzset üresen hagyja, hiszen ezekre nem történik utalás a diagramban.
+            <programlisting language="c++"><![CDATA[
+                int getMelyseg ()
+                {
+                }
+
+                /**
+                * @return double
+                */
+                double getAtlag ()
+                {
+                }
+                ]]></programlisting>
+        </para>
+    </section>
+    
+    <section>
+        <title>Egy esettan</title>
+        <para>
+            A BME-s C++ tankönyv 14. fejezetét (427-444 elmélet, 445-469 az esettan) dolgozzuk fel!
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            UML-ben az osztályokat téglalapok ábrázolják, melyek 3 részből állnak. Az első részben szerepel az osztály neve, ezt követi
+            az osztály attribútumai és végül tagváltozói. Mind a változók, mind a függvények előtt szerepel egy láthatóságot jelölő operátor.
+            A "+" jelöli a publikus tagokat, a "-" a privát tagokat és a "#" a védetteket. Ezket követi az attribútum neve, típusa, 
+            multiplicitása és alapértelmezett értéke.
+            <programlisting>
+                láthatóság név : típus multiplicitás = alapértelmezett érték {tulajdonságok}
+            </programlisting>
+        </para>
+        <para>
+            UML osztálydiagramok esetén a műveleteket a következő szintaxissal adhatjuk meg:
+            <programlisting>
+                láthatóság név paraméterlista: visszatérési_érték {tulajdonságok}
+                
+                például:
+                +lepesValidator(x:int, y:int):bool
+            </programlisting>
+            A paraméterlistában meg lehet adni aparaméter irányát is, mely alapértelmezetten nulla. 3 féle lehet a paraméter iránya: in, out és inout.
+            Az <function>in</function> az érték szerinti paraméterátadást reprezentálja, a <function>out</function> esetén a művelet megváltoztatja a
+            pointerként vagy referenciaként átadott objektumot. Végezetül az <function>inout</function> paramétert a függvény felhasználja és módosítja is.
+            A paraméterlista szintaxisa a következő:
+            <programlisting>
+                irány név : típus = alapértelmezett_érték
+            </programlisting>
+            A műveleteket a <function>query</function> tulajdonsággal tudjuk konstanssá tenni, melyet az attribútumokhoz hasonlóan kapcsos zárójelek 
+            közé kell írni. Mind a változókra, mind a függvényekre igaz, hogy a statikusságot UML-ben aláhúzással jelöljük.
+        </para>
+        <para>
+            Most következik a csomópontokat összekötő irányított szakaszok, kapcsolatok.
+        </para>
+        
+        
+        
+        
+        <para>
+            Az <function>assszociációt</function>, mint két osztály kapcsolatát a diagramon egy vonallal jelöljük, melyenek közepén
+            helyezkedik el az asszociáció neve, de ennek irány nem mindig egyértelmű, ezért használunk nyilakat.
+            Az asszociácóhoz tartozhatnak <function>szerepnevek</function> is, melyek azt jelölik, hogy miként vesznek részt az osztályok a 
+            kapcsolatban. Az asszociációnak lehetnek attribútumai, ezeket az asszociációs osztály reprezentálja. Ezek az osztályok szaggatott vonallal
+            vannak összekötve az asszociációval. Az asszociációs osztályokat normál osztályként implementáljuk, mely tartalmaz egy bal és egy jobb osztályra
+            mutató mutatót. És segíti a másik oldal elrését is az osztályoknak. 
+        </para>
+        <para>
+            <emphasis role="strong">Az esettanulmány</emphasis>
+        </para>
+        <para>
+            Egy számítógép-alkatrészekkel és számítógép konfiurációval foglalkozó kereskedésnek kell elkészíteni egy szoftvert.
+            A szoftver feladata, hogy nyílvántartsa az alkatrészeket és a konfigurációkat. Támogatnia kell a termékek 
+            állományból való betöltését, képernyőn történő megjelenítését, az árak rugalmas kialakítást.
+        </para>
+        <para>
+            A koncepció 2 részből áll. Elsőnek ki kell alakítani egy keretrendszert osztálykönyvtár formájában, mely alapszinten
+            támogatja a termékek kezelését. Erre kell ráépíteni a számítógép-alkatrészeket kezelő rendszert. Cél, hogy a keretrendszer
+            módosítása nélkül lehessen a jövőben új termékcsaládokat támmogató szoftvereket készíteni.
+        </para>
+        <para>
+            Először a keretrendszer kialakításával foglalkozunk. Szükség van egy <function>Product</function> osztályra, mely 
+            a termékek általános kezelését implementálja. Ebből fognak leszármazni azok az osztályok amik minden termék jellemzői, mint pl a kezdő ár. ezek fognak belekerülni a <function>Product</function> osztályba.
+        </para>
+        <para>
+            Mivel a kereskedés számítógép-konfigurációkat is árul, ezért szükséges az összetett termékek kezelése is. Ezt a 
+            <function>CompositeProduct</function> osztály valósítja meg. Az egyes alkatrészeket vektorban tároljuk, melyhez az 
+            <function>AddPart</function> metódussal tudunk elemeket adni. Az adatfolyamból az összetett termékeket
+            egy extra paraméterrel adjuk meg. Ez a paraméter tartalmazza, hogy hány elemből áll, így tudjuk, hogy az utána következő x darab 
+            hozzá tartozik.
+        </para>
+        <para>
+            Az egyes termékeket nyílván kell tartani. Ezért van szükség a <function>ProductInventory</function> osztályra.
+            Feladata a betöltött termékek tárolása memóriában, azok adatfolyamba írása, és formázott megjelenítése. Ebben az osztályban 
+            is egy vektorban tároljuk a termékeket. 
+        </para>
+        <para>
+            A probléma abból adódik, hogy a keretrendszer egy osztálykönvtár, emiatt az általunk bevezetett termékosztályokat nem ismeri. 
+            Emiatt szükség van még egy osztályra ami nem más mint a ProductFactory osztály.
+            Ennek a <function>ReadAndCreateProduct</function> függvényét a keretrendszerben kell definiálni, de ez által 
+            meghívott <function>CreateProduct</function> függvény már virtuális, tehát implememtációját rábízzuk a leszármazott osztályokra. 
+        </para>
+        <para>
+            Amikor elkszítjük a keretrendszerre épülő alkalmazásunkat, a <function>ProductFactory</function> osztályt kell
+            leszármaztatnunk, ez lesz a <function>ComputerProductFactory</function>. Erre azért van szükség, hogy az előbb említett virtuális függvényhez definíciót tudjunk adni.
+        </para>
+    </section>        
+        
+    <section>
+        <title>BPMN</title>
+        <para>
+            Rajzoljunk le egy tevékenységet BPMN-ben! 
+        </para>
+        <para>
+            <link xlink:href="https://arato.inf.unideb.hu/batfai.norbert/UDPROG/deprecated/Prog2_7.pdf">https://arato.inf.unideb.hu/batfai.norbert/UDPROG/deprecated/Prog2_7.pdf (34-47 fólia)</link>
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            A BPMN(Business Process Model and Notation) üzleti folyamatok ábrázolásához használt nyelv. Jelenlegi legújabb verziója
+            a BPMN 2.0. 
+        </para>
+        <para>
+            Az UML diagramon kívül van még más lehetőségünk is arra, hogy modellezzünk egy folyamatot. 
+            Bár ez nem konkrétan osztályokat vázol fel, hanem a folyamatát adja meg.
+        </para>
+        <para>
+            Maga a folyamat a könyv kölcsönzési folyamatot írja le, ami úgy történik, hogy kérést
+            nyújtunk be erről a szándékunkról, és erre kapunk majd egy választ, hogy a könyv
+            elérhető-e vagy sem. Ha elérhető, "kifizetjük", majd erről értesítést kap a pénztár is,
+            végül a végállapotba érünk. A másik esetben, ha a könyv foglalt és erről értesítést
+            kapunk, dönthetünk három opció közül: félrerakatjuk a könyvet magunknak, mikor
+            elérhetővé válik, elvetjük a könyvet, vagy 1 hét múlva ismét jelentkezünk érte. Az
+            utóbbi kettő esetében a könyv kölcsönzési kérelmet visszadobtuk és így kerültünk a
+            végállapotba. A könyv félrerakásakor választ küldünk ezzel kapcsolatban, majd két hét
+            múlva értesítést kapunk a könyv aktuális állapotáról.
+        </para> 
+    </section>        
+
+    <section>
+        <title>
+            <emphasis role="cadiumgreen">BPEL Helló, Világ! - egy visszhang folyamat</emphasis>
+        </title>
+        <para>
+            Egy visszhang folyamat megvalósítása az alábbi teljes „videó tutoriál” alapján:
+            <link xlink:href="https://youtu.be/0OnlYWX2v_I">https://youtu.be/0OnlYWX2v_I</link>
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+    </section>        
+     
+    <section>
+        <title>
+            TeX UML
+        </title>
+        <para>
+            Valamilyen TeX-es csomag felhasználásával készíts szép diagramokat az OOCWC projektről (pl.
+            use case és class diagramokat)
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+    </section>
+
+    <section>
+        <title>
+            EPAM: Neptun tantárgyfelvétel modellezése UML-ben
+        </title>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+    </section> 
+
+    <section>
+        <title>
+            EPAM: Neptun tantárgyfelvétel UML diagram implementálása
+        </title>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+    </section>
+
+    <section>
+        <title>
+            EPAM: OO modellezés
+        </title>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+    </section>	
+
+</chapter>                

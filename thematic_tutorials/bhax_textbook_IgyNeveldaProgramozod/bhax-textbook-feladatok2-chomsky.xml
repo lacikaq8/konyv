@@ -1,0 +1,666 @@
+<chapter xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" version="5.0" xml:lang="hu">
+    <info>
+        <title>Helló, Chomsky!</title>
+        <keywordset>
+            <keyword/>
+        </keywordset>
+    </info>
+
+    <section>
+        <title>Encoding</title>
+        <para>
+            Fordítsuk le és futtassuk a Javat tanítok könyv MandelbrotHalmazNagyító.java forrását úgy, hogy a
+            fájl nevekben és a forrásokban is meghagyjuk az ékezetes betűket!
+        </para>
+        <para>
+            <link xlink:href="https://www.tankonyvtar.hu/hu/tartalom/tkt/javat-tanitok-javat/adatok.html">https://www.tankonyvtar.hu/hu/tartalom/tkt/javat-tanitok-javat/adatok.html</link>
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            Most azzal fogunk megismerkedni, hogy a Java nyelv milyen módon
+            teszi lehetővé azt, hogy ékezetes betűket használjunk a forrásban.
+        </para>
+        <para>
+            Java nyelv abban különleges, hogy a forráskódban támogatja az Unicode karakterkódolást, ellentétben a C/C++-al, ahol csak ASCII karaktereket használhatunk.
+        </para>
+        <para>
+            A megoldás a problémára a Javac <function>-encoding</function> kapcsolója. Ezután megadhatjuk a kívánt karakterkódolást, és lefordul a program. 
+            <programlisting>
+                javac -encoding utf8 MandelbrotHalmazNagyító
+            </programlisting>
+        </para>
+    </section>        
+
+    <section>
+        <title>OOCWC lexer</title>
+        <para>
+            Izzítsuk be az OOCWC-t és vázoljuk a <link xlink:href="https://github.com/nbatfai/robocaremulator/blob/master/justine/rcemu/src/carlexer.ll">https://github.com/nbatfai/robocaremulator/blob/master/justine/rcemu/src/carlexer.ll</link>
+            lexert és kapcsolását a programunk OO
+            struktúrájába!
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            A lexer feladata az, hogy tokenizálja a bemenetet, és ezek alapján elemezzük azt. 
+            A Lex egy program, amely lexikális elemzőt generál. Beolvassa a bemenetet, és 
+            elkészíti a lexikális elemzőt, majd pedig legenerálja a C++ forrást. 
+        </para>
+        <para>
+                Az alap struktúra a következő:
+                <programlisting><![CDATA[
+                    {definíciók}
+                    %%
+                    {szabályok}
+                    %%
+                    {felhasználói utasítások} 
+                    ]]>
+                </programlisting>
+            </para>
+            <para>
+            Ez alapján nézzük végig a <filename>carlexer.ll</filename>
+            <programlisting><![CDATA[
+                %option c++
+                %option noyywrap
+            ]]></programlisting>
+            A forrás elsőrésze azt adja meg, hogy c++ forrást szeretnénk generálni, 
+            és nincs szükségünk az <function>yywrap()</function> függvényre. Az 
+            <function>yywrap()</function> feladata az lenne, hogy amikor az <function>yylex()</function>
+            végére ér a bemenetnek, akkor meghívja, és ha 1-et ad vissza, akkor nincs már
+            több bemenet, 0 esetén pedig tovább olvassa a bemenetet amire az <function>yyin</function>
+            mutat. Mivel a <function>yywarp()</function> függvény definícióját nem adja meg
+            a Lex program a kimeneti C++ fájlban, ezt a programozónak kell elkészítenie.
+            <programlisting><![CDATA[
+                %{
+                    #define YY_DECL int justine::robocar::CarLexer::yylex()
+                    #include "carlexer.hpp"
+                    #include <cstdio>
+                    #include <limits>
+                %}
+            ]]></programlisting>
+            Az opciók megadása után include-áljuk a szükséges header állományokat,
+            deklarálhatjuk a szükséges változókat, vagy macro-kat hozhatunk létre.
+            <programlisting><![CDATA[
+                INIT	"<init"
+                INITG	"<init guided"
+                WS	[ \t]*
+                WORD	[^-:\n \t()]{2,}
+                INT	[0123456789]+
+                FLOAT	[-.0123456789]+
+                ROUTE	"<route"
+                CAR	"<car"
+                POS	"<pos"
+                GANGSTERS	"<gangsters"
+                STAT	"<stat"
+                DISP	"<disp>"
+            ]]></programlisting>
+            A következő lépés az egyes lexer-hez szükséges változók megadása. Lényegében megadunk
+            egy nevet és ehhez hozzákapcsolunk egy stringet, így utána a nevet tudjuk használni a 
+            szabályok meghatározása során. Tehát, ahogy látható, az <function>INIT</function> esetén 
+            a <![CDATA["<init"]]> sztringet olvasunk be. A <function>WS</function> a whitespace-t jelenti,
+            és azért van ott a csillag, mert bármennyi lehet belőle, akár 0 is. A <function>WORD</function>
+            egy kicsit érdekesebb reguláris kifejezés. Ez olyan bemeneteket jelent, amik nem
+            <![CDATA[-,:,\n, \t,(,)]]> karakterekből állnak, és legalább 2 elemből.
+            <programlisting><![CDATA[
+            %% 
+            {DISP}					{
+                                m_cmd = 0;
+                                }
+            {POS}{WS}{INT}{WS}{INT}{WS}{INT}	{
+                                std::sscanf(yytext, "<pos %d %u %u", &m_id, &from, &to);
+                                m_cmd = 10001;
+                                }
+            {CAR}{WS}{INT}				{
+                                std::sscanf(yytext, "<car %d", &m_id);
+                                m_cmd = 1001;
+                                }
+            {STAT}{WS}{INT}				{
+                                std::sscanf(yytext, "<stat %d", &m_id);
+                                m_cmd = 1003;
+                                }
+            {GANGSTERS}{WS}{INT}			{
+                                std::sscanf(yytext, "<gangsters %d", &m_id);
+                                m_cmd = 1002;
+                                }
+            {ROUTE}{WS}{INT}{WS}{INT}({WS}{INT})*	{
+                            int size{0};
+                            int ss{0};
+                            int sn{0};				  
+                            
+                            std::sscanf(yytext, "<route %d %d%n", &size, &m_id, &sn);
+                            ss += sn;
+                            for(int i{0}; i<size; ++i)
+                            {
+                                unsigned int u{0u};
+                                std::sscanf(yytext+ss, "%u%n", &u, &sn);
+                                route.push_back(u);
+                                ss += sn; 				    
+                            }
+                            m_cmd = 101;
+                            }
+            {INIT}{WS}{WORD}{WS}("c"|"g")	{
+                            std::sscanf(yytext, "<init %s %c>", name, &role);
+                            num = 1;
+                            m_cmd = 0;
+                            }
+            {INIT}{WS}{WORD}{WS}{INT}{WS}("c"|"g")	{
+                            std::sscanf(yytext, "<init %s %d %c>", name, &num, &role);
+                            if(num >200)
+                            {
+                                m_errnumber = 1;
+                                num = 200;
+                            }
+                            m_cmd = 1;
+                            }				
+            {INITG}{WS}{WORD}{WS}("c"|"g")	{
+                            std::sscanf(yytext, "<init guided %s %c>", name, &role);
+                            num = 1;
+                            m_guided = true;
+                            m_cmd = 3;
+                            }
+            {INITG}{WS}{WORD}{WS}{INT}{WS}("c"|"g")	{				  
+                            std::sscanf(yytext, "<init guided %s %d %c>", name, &num, &role);
+                            if(num >200)
+                            {
+                                m_errnumber = 1;
+                                num = 200;
+                            }
+                            m_guided = true;
+                            m_cmd = 2;
+                            }								
+            .				{;}
+            %%
+            ]]></programlisting>
+            A szabályok részben pedig megadjuk, hogy az egyes bemenetek szerint mi legyen az egyes változók
+            értéke. Ehhez a <function>sscanf</function>-et használjuk, aminek az első paramétere a bemenet, 
+            majd annak a formátuma, és végül az egyes változók, amikbe "beleírjuk" az értékeket.
+            <programlisting>
+                int yyFlexLexer::yylex(){return -1;}
+            </programlisting>
+            Végül definiáljuk az <function>yylex()</function> függvényt. Ebből a <filename>carlexer.ll</filename>
+            fájlból pedig a <function>lex</function> parancs legenerálja a forrást.
+        </para>
+        <para>
+            <emphasis role="strong">C++ forrás generálása</emphasis>
+            <programlisting>
+                lex carlexer.ll
+            </programlisting>
+        </para>
+    </section>        
+        
+    <section>
+        <title>
+            <emphasis role="cadiumgreen">l334d1c45</emphasis>
+        </title>
+        <para>
+            Írj olyan OO Java vagy C++ osztályt, amely leet cipherként működik, azaz megvalósítja ezt a betű
+            helyettesítést: <link xlink:href="https://simple.wikipedia.org/wiki/Leet">https://simple.wikipedia.org/wiki/Leet</link>
+            (Ha ez első részben nem tetted meg, akkor írasd
+            ki és magyarázd meg a használt struktúratömb memóriafoglalását!)
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            Mielőtt nekiugrunk a feladat megoldásának azelőtt érdemes megnézni a <filename>l337d1c7.l</filename> forrásban lévő <function>cipher</function>
+            struktúrát.
+            <programlisting>
+                struct cipher {
+                    char c;
+                    char *leet[4];
+                    }
+            </programlisting>
+            Ha a <function>sizeof</function> függvénnyel megnézzük a méretet, akkor azt kapjuk, hogy 
+            40 bájt. A <function>leet</function> mérete viszont 32 bájt, mivel a
+            <function>char*</function> 8 bájt, és a tömb 4-szer ennyi helyet foglal le. A
+            <function>char</function> mérete pedig 1 bájt. Akkor mi okozza a problémát? A megoldás 
+            a <emphasis role="strong">padding</emphasis>. A padding lényege, hogy a 
+            fordító a címzési hibák elkerülése érdekében extra területet foglal.
+            Az alábbi szabály alapján történik a plusz terület foglalás: ha egy tag előtt vagy mögött vagy a
+            struktúra legvégén deklarálva van egy nagyobb tag, akkor mérete a nagyobb tagéval lesz egyenlő. 
+            A padding megszüntetése is megoldható a <function>#pragma pack(1)</function> segítségével.
+            Ezek után a várt eredményt fogjuk kapni.
+        </para>
+        <para>
+            Továbbiakban ugyan azt fogja csinálni a program, csak kap egy grafikus felületet a Qt segítségével, viszont nem fogjuk használni a Lex programot.
+           Először a <function>Cipher</function> osztályt fogjuk megnézni.
+            <programlisting language="c++"><![CDATA[
+                #include <QVector>
+                #include <QRandomGenerator>
+                
+                class Cipher
+                {
+                public:
+                    Cipher();
+                    QString get_result();
+                    void encryption(QString);
+                
+                private:
+                    struct m_cipher{
+                        char c;
+                        char const *leet[4];
+                    };
+                
+                    QVector<struct m_cipher> m_vector;
+                
+                    QString m_result;
+                };]]>
+            </programlisting>
+            Korábban C forrásban tömböt használtunk az egyes karakterekhez tartozó konverziókhoz, itt most vektorral csináljuk <function>QVector</function>.
+            A csere oka egyszerűen annyi, hogy egy fejletebb adatstruktúrát használjunk, aminek van olyan függvénye, amely megadja az elemei számát. A random számok
+            generálását pedig a <function>QRandomGenerator</function> osztályra bízzuk.
+            A <function>get_result()</function> függvény feladata, hogy az <function>m_result</function> privát tag értékéhez hozzáférést biztosítson.
+            <programlisting language="c++"><![CDATA[
+                QString Cipher::get_result(){
+                    return m_result;
+                }
+            ]]></programlisting>
+            A szöveg kódolását a <function>encryption()</function> függvény végzi, melynek definíciója a következő:
+            <programlisting language="c++"><![CDATA[
+                void Cipher::encryption(QString input){
+                    m_result.clear();
+                    for (int x = 0; x < input.length(); ++x){
+                        int found = 0;
+                        for(int i=0; i<m_vector.length(); ++i)
+                        {
+                
+                            if(m_vector[i].c == input[x].toLower())
+                            {
+                
+                                int r = static_cast<int>(QRandomGenerator::global()->generate()%4);
+                
+                                m_result.append(m_vector[i].leet[r]);
+                
+                                found = 1;
+                                break;
+                            }
+                
+                        }
+                
+                        if(!found)
+                            m_result.append(input[x]);
+                    }
+                }
+            ]]></programlisting>
+            Hasonló mint a korábbi megoldás, csak kisebb dolgok lettek módosítva. Az <function>m_result</function>-ot minden 
+            híváskor ürítjük, hogy ne legyenek benne a korábbi fordításból származó eredmények. Majd végig megyünk a bemeneten karakterenként, és
+            ha van olyan karakter, amit tudunk helyettesíteni, akkor random kiválasztunk egyet. Ha valamilyen oknál fogva nem oldható ez meg, akkor pedig az eredetit rakjuk be az <function>m_result</function>
+            stringbe. A random számot a <function>QRandomGenerator::global()->generate()</function> függvénnyel generáljuk. De mivel nekünk csak 4 elem van a helyettesíthető elemek között, ezért a random számot maradékosan osztjuk 4-gyel. 
+        </para>
+    </section>        
+
+    <section>
+        <title>
+            <emphasis role="cadiumgreen">Full screen</emphasis>
+        </title>
+        <para>
+            Készítsünk egy teljes képernyős Java programot!
+            Tipp: <link xlink:href="https://www.tankonyvtar.hu/en/tartalom/tkt/javat-tanitok-javat
+                                    /ch03.html#labirintus_jatek">
+            https://www.tankonyvtar.hu/en/tartalom/tkt/javat-tanitok-javat
+                                    /ch03.html#labirintus_jatek</link>
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+    </section>        
+    
+    <section>
+        <title>Paszigráfia Rapszódia OpenGL full screen vizualizáció</title>
+        <para>
+            Lásd vis_prel_para.pdf! Apró módosításokat eszközölj benne, pl. színvilág, textúrázás, a szintek jobb
+            elkülönítése, kézreállóbb irányítás.
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+    </section>        
+
+    <section>
+        <title>Paszigráfia Rapszódia LuaLaTeX vizualizáció</title>
+        <para>
+            Lásd vis_prel_para.pdf! Apró módosításokat eszközölj benne, pl. színvilág, még erősebb 3D-s hatás.
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+    </section>        
+
+    <section>
+        <title>Perceptron osztály</title>
+        <para>
+            Dolgozzuk be egy külön projektbe a projekt Perceptron osztályát!
+            Lásd <link xlink:href="https://youtu.be/XpBnR31BRJY">https://youtu.be/XpBnR31BRJY</link>
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            A Perceptron annyit csinál, hogy kétfelé választja a bemenetet. Egy perceptron a következő részekből áll:
+            bemenetek, a hozzájuk tartozó súlyok, az összegző csomópont, az aktivációs függvény és a kimenet.
+            Ezt implementálja a <function>Perceptron</function> osztályunk, ami az <filename>ml.hpp</filename>-ben található.
+            <programlisting><![CDATA[
+    class Perceptron
+    {
+    public:
+        Perceptron ( int nof, ... )
+        {
+            n_layers = nof;
+            
+            units = new double*[n_layers];
+            n_units = new int[n_layers];
+            
+            va_list vap;
+            
+            va_start ( vap, nof );
+            
+            for ( int i {0}; i < n_layers; ++i )
+            {
+                n_units[i] = va_arg ( vap, int );
+                
+                if ( i )
+                    units[i] = new double [n_units[i]];
+            }
+            
+            va_end ( vap );
+            
+            weights = new double**[n_layers-1];
+            
+            #ifndef RND_DEBUG
+            std::random_device init;
+            std::default_random_engine gen {init() };
+            #else
+            std::default_random_engine gen;
+            #endif
+            
+            std::uniform_real_distribution<double> dist ( -1.0, 1.0 );
+            
+            for ( int i {1}; i < n_layers; ++i )
+            {
+                weights[i-1] = new double *[n_units[i]];
+                
+                for ( int j {0}; j < n_units[i]; ++j )
+                {
+                    weights[i-1][j] = new double [n_units[i-1]];
+                    
+                    for ( int k {0}; k < n_units[i-1]; ++k )
+                    {
+                        weights[i-1][j][k] = dist ( gen );
+                    }
+                }
+            }
+        }
+        
+        Perceptron ( std::fstream & file )
+        {
+            file >> n_layers;
+            
+            units = new double*[n_layers];
+            n_units = new int[n_layers];
+            
+            for ( int i {0}; i < n_layers; ++i )
+            {
+                file >> n_units[i];
+                
+                if ( i )
+                    units[i] = new double [n_units[i]];
+            }
+            
+            weights = new double**[n_layers-1];
+            
+            for ( int i {1}; i < n_layers; ++i )
+            {
+                weights[i-1] = new double *[n_units[i]];
+                
+                for ( int j {0}; j < n_units[i]; ++j )
+                {
+                    weights[i-1][j] = new double [n_units[i-1]];
+                    
+                    for ( int k {0}; k < n_units[i-1]; ++k )
+                    {
+                        file >> weights[i-1][j][k];
+                    }
+                }
+            }
+        }
+        
+        
+        double sigmoid ( double x )
+        {
+            return 1.0/ ( 1.0 + exp ( -x ) );
+        }
+        
+        
+        double operator() ( double image [] )
+        {
+            
+            units[0] = image;
+            
+            for ( int i {1}; i < n_layers; ++i )
+            {
+                
+                #ifdef CUDA_PRCPS
+                
+                cuda_layer ( i, n_units, units, weights );
+                
+                #else
+                
+                #pragma omp parallel for
+                for ( int j = 0; j < n_units[i]; ++j )
+                {
+                    units[i][j] = 0.0;
+                    
+                    for ( int k = 0; k < n_units[i-1]; ++k )
+                    {
+                        units[i][j] += weights[i-1][j][k] * units[i-1][k];
+                    }
+                    
+                    units[i][j] = sigmoid ( units[i][j] );
+                    
+                }
+                
+                #endif
+                
+            }
+            
+            return sigmoid ( units[n_layers - 1][0] );
+            
+        }
+        
+        void learning ( double image [], double q, double prev_q )
+        {
+            double y[1] {q};
+            
+            learning ( image, y );
+        }
+        
+        void learning ( double image [], double y[] )
+        {
+            //( *this ) ( image );
+            
+            units[0] = image;
+            
+            double ** backs = new double*[n_layers-1];
+            
+            for ( int i {0}; i < n_layers-1; ++i )
+            {
+                backs[i] = new double [n_units[i+1]];
+            }
+            
+            int i {n_layers-1};
+            
+            for ( int j {0}; j < n_units[i]; ++j )
+            {
+                backs[i-1][j] = sigmoid ( units[i][j] ) * ( 1.0-sigmoid ( units[i][j] ) ) * ( y[j] - units[i][j] );
+                
+                for ( int k {0}; k < n_units[i-1]; ++k )
+                {
+                    weights[i-1][j][k] += ( 0.2* backs[i-1][j] *units[i-1][k] );
+                }
+                
+            }
+            
+            for ( int i {n_layers-2}; i >0 ; --i )
+            {
+                
+                #pragma omp parallel for
+                for ( int j =0; j < n_units[i]; ++j )
+                {
+                    
+                    double sum = 0.0;
+                    
+                    for ( int l = 0; l < n_units[i+1]; ++l )
+                    {
+                        sum += 0.19*weights[i][l][j]*backs[i][l];
+                    }
+                    
+                    backs[i-1][j] = sigmoid ( units[i][j] ) * ( 1.0-sigmoid ( units[i][j] ) ) * sum;
+                    
+                    for ( int k = 0; k < n_units[i-1]; ++k )
+                    {
+                        weights[i-1][j][k] += ( 0.19* backs[i-1][j] *units[i-1][k] );
+                    }
+                }
+            }
+            
+            for ( int i {0}; i < n_layers-1; ++i )
+            {
+                delete [] backs[i];
+            }
+            
+            delete [] backs;
+            
+        }
+        
+        ~Perceptron()
+        {
+            for ( int i {1}; i < n_layers; ++i )
+            {
+                for ( int j {0}; j < n_units[i]; ++j )
+                {
+                    delete [] weights[i-1][j];
+                }
+                
+                delete [] weights[i-1];
+            }
+            
+            delete [] weights;
+            
+            for ( int i {0}; i < n_layers; ++i )
+            {
+                if ( i )
+                    delete [] units[i];
+            }
+            
+            delete [] units;
+            delete [] n_units;
+            
+        }
+        
+        void save ( std::fstream & out )
+        {
+            out << " "
+            << n_layers;
+            
+            for ( int i {0}; i < n_layers; ++i )
+                out << " " << n_units[i];
+                
+                for ( int i {1}; i < n_layers; ++i )
+                {
+                    for ( int j {0}; j < n_units[i]; ++j )
+                    {
+                        for ( int k {0}; k < n_units[i-1]; ++k )
+                        {
+                            out << " "
+                            << weights[i-1][j][k];
+                            
+                        }
+                    }
+                }
+                
+        }
+        
+    private:
+        Perceptron ( const Perceptron & );
+        Perceptron & operator= ( const Perceptron & );
+        
+        int n_layers;
+        int* n_units;
+        double **units;
+        double ***weights;
+        
+    };
+            ]]></programlisting>
+            A régi pogram módosítása után már nem csak egy számot fogunk kapni henem egy képi kimenetünk is lesz. 
+            A módosítás a következő:
+            <programlisting language="c++"><![CDATA[
+                srand(time(nullptr));
+
+                for(int i = 0; i < png_image.get_width(); ++i)
+                    for(int j = 0; j<png_image.get_height(); ++j){
+                        png_image[i][j].green = rand()%256;//newPNG[j*png_image.get_height()+j];
+                    }
+                png_image.write("output.png");            
+            ]]></programlisting>
+            Annyit csinálunk, hogy vesszük a beolvasott képet, és annak a zöld elemét változtatjuk random.
+            <programlisting language="c++"><![CDATA[
+                double* newPNG = new double[size];
+            
+                for(int i = 0; i < png_image.get_width(); ++i)
+                    for(int j = 0; j<png_image.get_height(); ++j){
+                        png_image[i][j].green = newPNG[j*png_image.get_height()+j];
+                    }
+                png_image.write("output.png");
+            ]]></programlisting>
+            Valójában van egy tömbünk csupa nullával, és ebből kiválasztjuk az adott elemet, amivel kinullázzuk az RGB valamelyikét.
+            Valójában elég lenne az alábbi kódcsipet is a tömb helyett:
+            <programlisting language="c++">
+                png_image[i][j].green = 0;
+            </programlisting>
+        </para>
+    </section>
+</chapter>                
