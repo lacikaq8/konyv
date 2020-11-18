@@ -253,11 +253,6 @@ public class Vehicles{
         <para>
             A alábbi táblázatban láthatóak az eredmények:
         </para>
-        <mediaobject>
-            <imageobject>
-                <imagedata fileref="img/liskov/tablazat.png" scale="70" />
-            </imageobject>
-        </mediaobject>
         <para>
          A mérés alapján a Java került ki győztesnek, nem sokkal lemaradva a C#. A C/C++ meglepő módon jelentősen lassabban teljesített.
         </para>

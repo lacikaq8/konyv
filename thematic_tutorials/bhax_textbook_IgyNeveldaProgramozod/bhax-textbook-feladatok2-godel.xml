@@ -1,0 +1,565 @@
+<chapter xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" version="5.0" xml:lang="hu">
+    <info>
+        <title>Helló, Gödel!</title>
+        <keywordset>
+            <keyword/>
+        </keywordset>
+    </info>
+
+    <section>
+        <title>Gengszterek</title>
+        <para>
+            Gengszterek rendezése lambdával a Robotautó Világbajnokságban
+        </para>
+        <para>
+            <link xlink:href="https://youtu.be/DL6iQwPx1Yw">https://youtu.be/DL6iQwPx1Yw(8:05-től)</link>
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            Azt fogjuk megnézni, hogy hogyan lehet <function>std::sort()</function> függvényt használni. 
+            A következőkben a kódot fogjuk elemezni.
+            <programlisting language="c++"><![CDATA[
+            std::sort ( gangsters.begin(), gangsters.end(), [this, cop] ( Gangster x, Gangster y )
+            {
+                return dst ( cop, x.to ) < dst ( cop, y.to );
+            } );]]>                  
+            </programlisting>
+            Az <function>std::sort()</function> függvénynek létezik kettő illetve három paraméteres
+            verziója. Az első két paraméter mindig az, hogy mettől meddig szeretnénk
+            rendezni a vektort, vagy tömböt. A harmadik pedig egy opcionális paraméter, mely
+            a rendezés alapjául szolgáló függvényt adja meg. Ha ezt kihagyjuk, akkor az alapértelmezett
+            függvény dönti el, hogy mi alapján fogja rendezni az elemeket.
+        </para>
+        <para>
+            Ha megnézzük a kódunkat akkor az látható hogy az első paraméter a <varname>gangsters</varname>
+            vektor első elemének az indexét a második paraméter viszont a vektor utolsó elemének az indexét tartalmazza.
+            Ezeket a <function>begin()</function> és az <function>end()</function> függvény segítségével tudjuk megvalósítani. Mivel látható egy harmadik paraméter is így arról is érdemes pár szót beszélni.
+            Ez egy név nélküli függvény vagy ha úgy tetszik lambda függvény.
+        </para>
+        <para>
+            A lambda függvény C++11 óta támogatott. A szintaxisa a következő:
+            <programlisting>
+                [](paraméterek)-> visszatérési típusa {utasítások}
+            </programlisting>
+            A [] jelek közé lehet olyan változókat megadni, amelyeket a függvényen kívül szeretnénk használni.
+            A feladatban az aktuális objektum mutatójára és a <varname>cop</varname>
+            objektumra van szükség.
+            Paraméterül két <classname>Gangster</classname> osztályú
+            objektumot kap, melyek a <function>sort</function> által összehasonlított elemek. 
+            A lambdában lévő utasítás pedig azt vizsgálja, hogy melyik gangster van közelebb a rendőrhöz.
+            A vizsgálat eredményeként egy <varname>bool</varname> értékkel tér vissza.
+        </para>
+        <para>
+            Vagyis az történik, hogy az <function>std::sort()</function> függvény, és egy lambda függvény
+            segítségével a <varname>gangsters</varname> vektor elemeit a rendőröktől való
+            távolságuk szerint rendezzük növekvő sorrendbe.
+        </para>
+    </section>        
+
+    <section>
+        <title>C++11 Custom Allocator</title>
+        <para>
+            <link xlink:href="https://prezi.com/jvvbytkwgsxj/high-level-programming-languages-2-c11-allocators/">https://prezi.com/jvvbytkwgsxj/high-level-programming-languages-2-c11-allocators/</link> a
+            CustomAlloc-os példa, lásd C forrást az UDPROG repóban
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            Amikor példányosítunk egy objektumot, akkor a memóriában automatikusan lefoglalódik az ehhez szükséges terület. C++-ban a <function>new</function> operátorral tudjuk meghívni az alapértelmezett allokátort.
+            Viszont ha szeretnénk beleszólni a programunk memóriakezelésébe, akkor saját allokátor osztályt kell írnunk. 
+            A továbbiakban <classname>CustomAlloc</classname> osztályunkat fogjuk megnézni amit azért hoztunk létre, hogy nyomonkövessük a lefoglalt memóriaterületeket.
+        </para>
+        <para>
+            <programlisting language="c++"><![CDATA[
+                template<typename T>
+                    class CustomAlloc
+                    {
+                    public:
+                        CustomAlloc() {}
+                        CustomAlloc(const CustomAlloc&) {}
+                        ~CustomAlloc() {}
+                    
+                        using size_type = size_t;
+                        using value_type = T;
+                        using pointer = T*;
+                        using const_pointer = const T*;
+                        using reference = T&;
+                        using const_reference = const T&;
+                        using difference_tyoe = ptrdiff_t;
+                    
+                        pointer allocate( size_type n){
+                            int s;
+                            char* p = abi::__cxa_demangle( typeid (T).name(), 0, 0, &s);
+                            std::cout << "Allocating"
+                                      << n << " objects of "
+                                      << n*sizeof (T)
+                                      << " bytes. "
+                                      << typeid (T).name() << "=" << p
+                                      << std::endl;
+                            delete p;
+                            return reinterpret_cast<T*>(new char[n*sizeof(T)]);
+                        }
+                    
+                        void deallocate (pointer p, size_type n){
+                            delete[] reinterpret_cast<char *>(p);
+                            std::cout << "Deallocating"
+                                      << n << " objects of "
+                                      << n*sizeof (T)
+                                      << " bytes. "
+                                      << typeid (T).name() << "=" << p
+                                      << std::endl;
+                    
+                        }                    
+                    };]]>
+            </programlisting>
+            Ahogy látható ez egy template-elt osztály, tehát bármilyen típussal használhatjuk. 
+            Újdonságnak számít a <function>using</function> kulcsszó. Ez a C++11-től kezdve a <function>typedef</function>
+            helyett használható. Tehát arra szolgál, hogy az egyenlőségjel jobb oldalán található típusokra más néven is tudunk hivatkozni. Az <function>allocate</function> osztály végzi a szükséges 
+            terület lefoglalását, és erre a területre mutató pointerrel tér vissza. Ebben a függvényben az <function>std</function> névtér mellett megismerkedünk egy 
+            újjal, mely az <function>abi</function>. Ez az <emphasis role="strong">A</emphasis>pplication <emphasis>B</emphasis>inary <emphasis role="strong">I</emphasis>nterface rövidítése.
+            Ennek segítségével meg tudjuk határozni, hogyan legyenek az argumentumok tárolva a hívási stack-ben, a registerekben, hogyan legyenek rendezve és padding-elve az egyes típusok
+            a struktúrákban. Mielőtt tovább haladnánk a kód elemzésében, elsőnek ejtsünk pár szót a <emphasis role="strong">name mangling</emphasis>-ról.    
+        </para>
+        <para>
+            A lényege annyi, hogy a forrásfájlban szereplő neveket átalakítja belsőleg használtakra.
+            Például a <function>void pelda(int i, char b)</function> függvényt a fordító átalakítja <function>pelda_FvicE</function> formára.
+            A <emphasis role="strong">name mangling</emphasis> lényege, hogy megkönnyítse a 
+            linker feladatát abban, hogy megkülönböztesse az egyes neveket. Ahogy látható a fenti példában, az átalakított formának is tartalmaznia kell a függvény nevét, és 
+            a kért paraméterek típusát. A visszatérési érték mindig az F utáni első betű, ami jelenleg <function>void</function>-ot jelöli.
+        </para>
+        <para>
+            Ezek után már körvonalazódik, hogy mire fogjuk használni a <function>__cxa_demangle</function>
+            függvényt. Ennek segítségével tudjuk visszafejteni az átalakított alakból az eredetit. A <function>typeid().name()</function> segítségével megkapjuk, hogy
+            egy objektum típusa milyen néven lett átalakítva. Ebben az esetben a fenti példában tárgyalt <function>void pelda(int i, char b)</function> esetén a 
+            <function>typeid(pelda).name()</function> függvény a <function>FvicE</function> kifejezést adja vissza. Tehát a <classname>CustomAlloc</classname> osztályunkban a 
+            <varname>T</varname> típusát fogjuk eltárolni karaktertömbként a <varname>p</varname> változóban. Majd <function>cout</function> segítségével kiíratjuk a 
+            lefoglalt bájtok méretét, és, hogy milyen típusnak foglaltunk területet. Végezetül pedig visszatérünk egy <varname>T</varname> típusú pointerrel, mely egy 
+            újonnan lefoglalt memóriaterületre mutat.
+        </para>
+        <para>
+            A <function>deallocate</function> függvény a memória felszabadítását végzi. 
+            Ezek után kiiírjuk a terminálba, hogy mennyi a felszabadított bájtok száma és azt, hogy melyik memóriaterületet szabadítottuk fel.
+        </para>
+        <para>
+            A <function>main</function> függvény a következőképpen néz ki:
+            <programlisting language="c++"><![CDATA[
+                int main()
+                {
+                    std::vector<int, CustomAlloc<int>> v;
+
+                    v.push_back(1);
+                    v.push_back(2);
+                    v.push_back(3);
+                    v.push_back(4);
+                    v.push_back(5);
+                    v.push_back(6);
+                    v.push_back(7);
+                    v.push_back(8);
+                    v.push_back(9);
+                    v.push_back(10);
+                    v.push_back(11);
+                    v.push_back(12);
+                    v.push_back(13);
+                    v.push_back(14);
+                    v.push_back(15);
+
+                    for(int x : v){
+                        std::cout << x << std::endl;
+                    }
+
+                    std::cout << typeid(pelda).name() << std::endl;
+                    return 0;
+                }]]>
+            </programlisting>
+            Deklarálunk egy vektort, majd ezek után megadjuk, hogy a mi allokátorunkat használja. 
+            Majd elkezdünk belerakni elemeket, és végül kiíratjuk a vektorban tárolt elemeket.  
+            A vektorok dinamikus adatszerkezetek, tehát "bármennyi" eleme lehet. 
+            Viszont ha betelik a lefoglalt terület, és új elemet adunk hozzá, akkor egy új területet foglal le, melynek mérete az előző duplája lesz. A már benne lévő elemeket átmásolja 
+            az új területre, majd törli a régit. Viszont ha használjuk a vektor <function>reserve</function> tagfüggvényét, 
+            akkor megadhatjuk, hogy hány bájtot foglaljon le. Ennek segítségével elérhetjük, hogy soha ne kelljen újabb területet foglalnia a vektornak.
+        </para>
+    </section>        
+        
+    <section>
+        <title>STL map érték szerinti rendezése</title>
+        <para>
+            Például: <link xlink:href="https://github.com/nbatfai/future/blob/master/cs/F9F2/fenykard.cpp#L180">https://github.com/nbatfai/future/blob/master/cs/F9F2/fenykard.cpp#L180</link>
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            Az STL szó a Standard Template Library rövidítése, melynek fontos részét képezik a tárolók. Alapvető cél az volt, hogy olyan adatszerkezeteket használjanak, melyek hatékonyan, biztonságosan, kivételbiztosan és típushelyesen tárolják az adatokat. STL tároló például a vector, a feladatban szereplő map, de a list, 
+            a set és a stack is ide sorolható. 
+        </para>
+        <para>
+            A <function>map</function> tárolók asszociatív tömbök, melyek kulcs-adat párokból áll, és kulcsértékek alapján növekvően van rendezve. 
+            Lássuk, hogy hogyan használjuk ezt a <filename>fenykard.cpp</filename> forrásban.
+            <programlisting language="c++"><![CDATA[
+std::vector<std::pair<std::string, int>> sort_map ( std::map <std::string, int> &rank )
+        {
+                std::vector<std::pair<std::string, int>> ordered;
+        
+                for ( auto & i : rank ) {
+                        if ( i.second ) {
+                                std::pair<std::string, int> p {i.first, i.second};
+                                ordered.push_back ( p );
+                        }
+                }
+        
+                std::sort (
+                        std::begin ( ordered ), std::end ( ordered ),
+                [ = ] ( auto && p1, auto && p2 ) {
+                        return p1.second > p2.second;
+                }
+                );
+        
+                return ordered;
+        }]]>
+            </programlisting>
+            Látható, hogy a <function>sort_map</function> függvény visszatérési értékének típusa egy vektor. Az érdekesség, hogy párokból áll.
+            Ehhez az <classname>std::pair</classname> adatszerkezetet használjuk, mely lehetővé teszi heterogén adatok párban való tárolását. Vagyis jelen esetben sztringeket és egészek párját tudjuk tárolni. 
+            Az <classname>std::map</classname> Kulcs és érték párokból áll, és minden kulcs csak egyszer fordulhat benne elő. Maga a függvény által végrehajtott utasítások már ismertek. Elsőnek bejárjuk a <varname>rank</varname> map-et, és az érték párokat beletesszük az <varname>ordered</varname> vektorba. 
+            Említést érdemel az <classname>auto</classname> típus. Ez a C++11 óta létező funkció, melynek lényege, hogy a fordító automatikusan
+            találja meg a megfelelő típust az adott változóhoz. Végül a vektor rendezése az előző feladatban megismert lambda kifejezésssel történik. 
+            Vagyis értékek alapján rendezzük át a vektort.  
+            A <filename>fenykard</filename> programot régen arra használták, hogy jegyeket adjanak a diákoknak. Ekkor már logikusnak tűnik, hogy elsőnek a <classname>map</classname>-ben
+            kell tárolni az egyes hallgatókat, hogy ne szerepelhessen többször ugyanaz a tanuló. Viszont az értékelés szempontjából nem kívánatos, hogy 
+            név alapján legyen rendezve a tömb. Ahhoz, hogy a teljesítményt lehessen osztályozni, át kell alakítani az adatszerkezetet érték szerint rendezetté. 
+        </para>
+    </section>        
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+    <section>
+        <title>Alternatív Tabella rendezése</title>
+        <para>
+            Mutassuk be a <link xlink:href="https://progpater.blog.hu/2011/03/11/alternativ_tabella">https://progpater.blog.hu/2011/03/11/alternativ_tabella</link> a programban a java.lang
+            Interface <![CDATA[Comparable<T>]]> szerepét!
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            Az Alternatív Tabella a magyar labdarúgó bajnokságon résztvevő csapatok rangsorát tartalmazza. A plusz dolog annyi az egészben, hogy nem csak azt vizsgálja, hogy az adott csapat nyert, vesztett vagy döntetlent játszott, hanem azt is, hogy ki ellen érte el az adott eredményt.
+        </para>
+        <para>
+            A továbbiakban az összehasonlítás menetével fogunk megismerkedni. A csapatok kezeléséhez létrehozunk egy 
+            <classname>Csapat</classname> osztályt, mely implementálja a <classname>Comparable</classname> interfészt.
+            Az osztály a következő:
+            <programlisting language="java"><![CDATA[
+                class Csapat implements Comparable<Csapat> {
+
+                    protected String nev;
+                    protected double ertek;
+                  
+                    public Csapat(String nev, double ertek) {
+                      this.nev = nev;
+                      this.ertek = ertek;
+                    }
+                  
+                    public int compareTo(Csapat csapat) {
+                      if (this.ertek < csapat.ertek) {
+                        return -1;
+                      } else if (this.ertek > csapat.ertek) {
+                        return 1;
+                      } else {
+                        return 0;
+                      }
+                    }
+                  }]]>
+            </programlisting>
+            Tehát egy <classname>Csapat</classname> típusú objektum rendelkezik egy névvel és egy értékkel. Mivel implementáltuk a 
+            <classname>Comparable</classname> interfészt, ezért definiálnunk kell a <function>compareTo</function> függvényt.  
+            Ennek a segítségével tudjuk megmondani, hogyan legyen összehasonlítva a két objektum.
+        </para>
+        <para>
+            Az eredeti példában két programunk volt. Az egyik <classname>Wiki2Matrix</classname>. Ez a csapatok egymás elleni eredményeit tartalmazó
+            kereszttáblázatból kiszámolja a linkmátrixot, amely alapjául szolgál a <classname>AlternativTabella</classname> programunkhoz. Viszont ekkor 
+            a kiírt linkmátrixot be kellett másolni az <classname>AlternativTabella</classname> forrásába, mely nem túl felhasználóbarát. Ezért a 
+            linkmátrixot a <classname>Wiki2Matrix</classname> osztály tagváltozójában tároljuk el. Ezt a <function>nyom3</function> függvény 
+            átalakításával érjük el.
+            <programlisting language="java"><![CDATA[
+                void nyom3(int[][] k, int[] oszlopOsszeg) {
+                    for (int i = 0; i < k.length; ++i) {
+                        matrix.add(new ArrayList<>());
+                        System.out.println();
+                        System.out.print("{");
+                        for (int j = 0; j < k[i].length; ++j) {
+            
+                            if (oszlopOsszeg[j] != 0.0) {
+                                System.out.print(k[i][j] * (1.0 / oszlopOsszeg[j]) + ", ");
+            //                    matrix[i][j] = k[i][j] * (1.0 / oszlopOsszeg[j]);
+                                matrix.get(i).add(k[i][j] * (1.0 / oszlopOsszeg[j]));
+                                
+                            } else {
+                                System.out.print(k[i][j] + ", ");
+                                matrix.get(i).add(k[i][j] * 1.0);
+                            }
+            
+                        }
+                        System.out.print("},");
+                    }
+                }]]>            
+            </programlisting>
+            Magát a linkmátrixot egy kétdimenziós <classname>ArrayList</classname>-ben tároljuk, mely a <classname>Vector</classname>
+            osztályt helyettesíti.
+            A másik módosítás a <function>AlternativTabella</function> osztályban történt.
+            <programlisting language="java"><![CDATA[
+                public static void main(String[] args) {
+        
+                    Wiki2Matrix Matrix = new Wiki2Matrix();
+                    
+                    ArrayList<ArrayList<Double>> L = Matrix.getMatrix();
+                        
+                        ...
+
+                    }]]>
+            </programlisting>
+            Tehát példányosítjuk a <classname>Wiki2Matrix</classname> osztályt. Végül pedig az osztály <function>getMatrix()</function> tagfüggvényével
+            érjük el.
+        </para>  
+    </section>        
+
+    <section>
+        <title>Prolog családfa</title>
+        <para>
+            Ágyazd be a Prolog családfa programot C++ vagy Java programba! Lásd para_prog_guide.pdf!
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            A Prolog egy programozási nyelv, melynek segítségével matematikai logikai formulákat tudunk vizsgálni.
+        </para>
+        <caution>
+            <title>SWI-Prolog használata</title>
+            <para>
+                <programlisting>
+                    sudo apt install swi-prolog-java               
+                </programlisting>
+                Az előző parancs sikeres lefutása után a NetBeans-ben a projektet megnyitva a <function>Libraries</function>-ra jobb egér kattintás majd hozzáadjuk a könyvtárat. 
+                Először létrehozunk egy új osztályt, majd a <function>/usr/lib/swi-prolog/lib/jpl.jar</function> fájlt kell megadni a ClassPath mezőben.
+            </para>
+        </caution>
+        <para>
+            A program úgy működik, hogy elsőnek betöltjük a Prolog fájlt, majd arról készítünk lekérdezéseket.
+        </para>
+        <para>
+            A <filename>family.pl</filename> fájl tartalmazza a pdf-ben megadott Prolog programot.
+            <programlisting language="perl">
+                férfi(nándi).
+                férfi(matyi).
+                férfi(norbi).
+                férfi(dodi).
+                férfi(joska).
+                nő(gréta).
+                nő(erika).
+                nő(kitti).
+                nő(marica).
+                gyereke(nándi, norbi).
+                gyereke(matyi, norbi).
+                gyereke(gréta, norbi).
+                gyereke(nándi, erika).
+                gyereke(matyi, erika).
+                gyereke(gréta, erika).
+                gyereke(norbi, dodi).
+                gyereke(norbi, kitti).
+                gyereke(erika, joska).
+                gyereke(erika, marica).
+
+                        . . .
+
+            </programlisting>
+            Ezt a programunkba a következő módon fogjuk beolvasni.
+            <programlisting language="java">
+                String s = "consult('family.pl')";
+                Query q = new Query(s);
+                System.out.println(q.hasSolution());        
+            </programlisting>
+            Először megadunk egy stringet, ami a kiértékelni kívánt formulát tartalmazza.
+            Majd létrehozunk egy <classname>Query</classname> osztályú objektumot. Ez az osztály teszi lehetővé, hogy kiértékeljük a 
+            formula igazságértékét, vagy az egyes változók lehetséges értékeit. Ha csak az igazságértékre vagyunk kíváncsiak, akkor a <function>hasSolution()</function>
+            függvényt kell használni. Ha itt hamis eredményt ad, akkor a fájlt nem találja.
+            <programlisting language="java">
+                String t2 = "apa(gréta)";
+                System.out.println(t2 + " is " + (Query.hasSolution(t2) ? "provable" : "not provable"));        
+            </programlisting>
+            Az első példa tehát azt mutatja be, hogy hogyan lehet megtudni a formula igazságértékét. Jelen esetben azt vizsgáljuk, hogy 
+            Gréta apának tekinthető-e. Mivel nem, ezért a "not provable" kifejezés jelenik meg.
+            <programlisting language="java"><![CDATA[
+                String t3 = "nagyapja(X, matyi)";
+                System.out.println("each solution of " + t3);
+                Query q3 = new Query(t3);
+                while (q3.hasMoreSolutions()) {
+                    Map<String, Term> s3 = q3.nextSolution();
+                    System.out.println("X = " + s3.get("X"));
+                }]]>                
+            </programlisting>
+            A változók értékének lehetséges értékeit kétféleképpen lehet felsorolni. A fenti példában azokat az X-eket keressük, akik Matyi nagyapjai lehetnek.
+            Ezt úgy tudjuk megfogalmazni matematikai logikával, hogy azokat az X-eket keressük, akik Matyi apjának vagy anyjának az apja. Tehát 
+            végig iterálunk a lehetséges X-eken. Ehhez a <function>hasMoreSolution()</function> használjuk, mely azt adja vissza, hogy van-e még több megoldás.
+            A <function>nextSolution()</function> eredményét eltároljuk kulcs-érték formátumban. Ezt a <classname>Map</classname> interfész segítségével oldjuk
+            meg. Ebből az adatszerkezetből a <function>get</function> tagfüggvénnyel tudjuk kinyerni az "X"-hez tartozó értéket.
+            Itt látható egy másik megoldás a változóértékek kilistázására.
+            <programlisting language="java"><![CDATA[        
+                String t6 = "testvér(matyi, X)";
+                Map<String, Term>[] ss6 = Query.allSolutions(t6);
+                System.out.println("all solutions of " + t6);
+                for (int i = 0; i < ss6.length; i++) {
+                    System.out.println("X = " + ss6[i].get("X"));
+                }]]>        
+            </programlisting>
+            Most azt fogjuk használni, hogy a kulcs-érték párokból tömböt készítünk, és egy <function>for</function> ciklus segítségével
+            végig megyünk rajta és kiírjuk. Ebben a részben azt viszgáljuk, hogy kik Matyi testvérei. Matyi testvérei azok akiknek ugyanaz 
+            az apja és anyja. 
+            <programlisting language="java">
+                String t4 = "nagyapa(X)";
+                System.out.println("first solution of " + t4 + ": X = " + Query.oneSolution(t4).get("X"));        
+            </programlisting>
+            Egy másik példában azokat az X-eket keressük, akik nagyapák, vagyis olyan személyeket, akinek a 
+            gyermeke szülő. 
+            <programlisting language="java"><![CDATA[
+                String t7 = "gyereke(X, norbi)";
+                System.out.println("each solution of " + t7);
+                Query q7 = new Query(t7);
+                while (q7.hasMoreSolutions()) {
+                    Map<String, Term> s7 = q7.nextSolution();
+                    System.out.println("X = " + s7.get("X"));
+                }]]>               
+            </programlisting>
+            Azt nézzük meg, hogy kik Norbi gyermekei. Ahhoz, hogy Norbi gyermekeit megtaláljuk, ahhoz nem kell semmit
+            tennünk, hiszen, ezt a <filename>family.pl</filename> fájlban leírtuk. 
+        </para>
+    </section>        
+
+    <section>
+        <title>GIMP Scheme hack</title>
+        <para>
+            Ha az előző félévben nem dolgoztad fel a témát (például a mandalás vagy a króm szöveges
+            dobozosat) akkor itt az alkalom!
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>Ezt a feladatot már feldolgoztam az előző félévben 9.2 és 9.3 </para>
+    </section>
+
+    <section>
+        <title>EPAM: Mátrix szorzás Stream API-val</title>
+        <para>Implementáld le a mátrix szorzást Java-ban for és while ciklusok használata nélkül.</para>
+        <para></para>
+    </section>
+
+    <section>
+        <title>EPAM: LinkedList vs ArrayList</title>
+        <para>Mutass rá konkrét esetekre amikor a Java-beli LinkedList és ArrayList rosszabb performanciát
+eredményezhet a másikhoz képest. (Lásd még LinkedList és ArrayList forráskódja). Végezz
+méréseket is. (mit csinál az ArrayList amikor megtelik)</para>
+        <para>
+            LinkedList > Arraylist
+            <programlisting language="java"><![CDATA[
+        public static void main(String[] args) {
+
+        ArrayList<Integer> arrli 
+            = new ArrayList<Integer>(); 
+  
+        for (int i = 1; i <= 10000000; i++) {
+            arrli.add(i);
+        }      
+        long startTime = System.currentTimeMillis();
+        arrli.remove(0);
+        arrli.add(0,0);
+        long stopTime = System.currentTimeMillis();
+        long elapsedTime = stopTime - startTime;
+        System.out.println(elapsedTime+" milli");
+        
+        LinkedList<String> object 
+        = new LinkedList<String>(); 
+
+        for (int i = 1; i <= 10000000; i++) {
+            object.add("A"); 
+        }
+        long startTime2 = System.currentTimeMillis();
+        object.remove(0);
+        object.set(0,"A");
+        long stopTime2 = System.currentTimeMillis();
+        long elapsedTime2 = stopTime2 - startTime2;
+        System.out.println(elapsedTime2);
+        
+    }
+                }]]>
+            </programlisting>
+        </para>
+        <para>
+            ArrayList > LinkedList
+            <programlisting language="java"><![CDATA[
+        long startTime3 = System.currentTimeMillis();
+        arrli.get(4999999);
+        long stopTime3 = System.currentTimeMillis();
+        long elapsedTime3 = stopTime3 - startTime3;
+        System.out.println(elapsedTime3);
+        
+        long startTime4 = System.currentTimeMillis();
+        object.get(4999999);
+        long stopTime4 = System.currentTimeMillis();
+        long elapsedTime4 = stopTime4 - startTime4;
+        System.out.println(elapsedTime4);
+                }]]>               
+            </programlisting>
+        </para>
+        <para>ArrayList vs LinkedList</para>
+        <para>1.Keresés: ArrayList kereső operációja O(1)-es sebessége van miközben a LinkedListnek csak O(n)</para>
+        <para>2.Törlés: LinkedList törlő operációja O(1) sebességű az Arraylistnek O(n) (legrosszabb esettben ha az első elemet akarjuk kitörölni) és O(1) ha az utolsó elemet akarjuk kitörölni. Azért gyorsabb a törlés linkedlistnél mert minden elemének van 2 pointere ami a szomszédjaira mutat emiatt ha kitörlünk egy elemet csak a pointer lokációját kell megváltoztatni de arraylistnél meg shiftelnünk kell az összes elemet.</para>
+        <para>3.Beszúrás: Linkedlist O(1) ArrayList O(n)</para>
+        <para>4.Memória használat: ArrayList csak az elemek indexét és maga az elemet tárolja a LinkedList meg az elemet és az elemnek a 2 szomszéd pointerjét így magas lesz a memória használata. </para>
+        <para>Konklúzió: Használjunk LinkedListet ha olyan tárolóra van szükségünk amihez gyakran addunk és eltávolítunk elemeket. Használjunk a Arraylistet ha olyan tárolót akarunk ahol inkább az elemek értékére van szükségünk.</para>
+
+    </section>
+
+    <section>
+        <title>EPAM: Refactoring</title>
+        <para>Adott egy “legacy” kód mely tartalmaz anonymus interface implementációkat, ciklusokat és
+feltételes kifejezések. Ebben a feladatban ezt a “legacy” kódot szeretnénk átírni lambda kifejezések
+segítségével (metódus referencia használata előnyt jelent!)</para>
+        <para></para>
+    </section>       
+
+</chapter>                
