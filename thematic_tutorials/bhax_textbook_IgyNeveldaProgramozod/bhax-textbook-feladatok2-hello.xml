@@ -1,0 +1,212 @@
+<chapter xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" version="5.0" xml:lang="hu">
+    <info>
+        <title>Helló,...!</title>
+        <keywordset>
+            <keyword/>
+        </keywordset>
+    </info>
+
+    <section>
+        <title>FUTURE tevékenység editor</title>
+        <para>
+            Javítsunk valamit a ActivityEditor.java JavaFX programon!
+            <link xlink:href="https://github.com/nbatfai/future/tree/master/cs/F6">https://github.com/nbatfai/future/tree/master/cs/F6</link>
+        </para>
+        <para>
+            Itt láthatjuk működésben az alapot: <link xlink:href="https://www.twitch.tv/videos/222879467">https://www.twitch.tv/videos/222879467</link>
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+    </section>        
+
+    <section>
+        <title>OOCWC Boost ASIO hálózatkezelése</title>
+        <para>
+            Mutassunk rá a scanf szerepére és használatára! <link xlink:href="https://github.com/nbatfai/robocaremulator/blob/master/justine/rcemu/src/carlexer.ll">https://github.com/nbatfai/robocaremulator/blob/master/justine/rcemu/src/carlexer.ll</link>
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            Volt már arról szó, hogy az OOCWC projekt lexerjében mire használjuk a <function>sscanf</function>-et. Ez a függvény egy formázott sztringet vár
+            bemenetül. Az első paramétere az a sztring, amiből olvassa a bemenetet, a többi paraméterrel pedig azt adjuk meg, hogyan tárolja azt.
+            Itt egy példa az OOCWC projekt <filename>myshmclient.cpp</filename> fájljából.
+            <programlisting language="c++"><![CDATA[
+while ( std::sscanf ( data+nn, "<OK %d %u %u %u>%n", &idd, &f, &t, &s, &n ) == 4 )
+    {
+        nn += n;
+        gangsters.push_back ( Gangster {idd, f, t, s} );
+    }]]>                
+            </programlisting>
+            Ebben az esetben olyan sztringet olvasunk be, amely <![CDATA[<OK]]>-val kezdődik. Utána várunk egy egészet, és 3 előjel nélküli egészt. Az utolsó paraméter az 
+            érdekesebb, hiszen az eddigiekkel már találkozhattunk a <function>printf</function> használatakor is. Az utolsó paraméternek egy olyan egészt adunk meg, melyben a 
+            <function>sscanf</function> a beolvasott bájtok számát adja meg. Ezt tároljuk el az <varname>n</varname> változóban. Értékét arra használjuk fel, hogy 
+            a beolvasni kívánt sztringen tovább lépjünk, ne olvassuk be újra ugyanazt az elemet. Azért van arra szükség, hogy ezt a beolvasást egy 
+            cikluson belül hajtsuk végre, mert nem tudhatjuk biztosan, hogy hány gengszter van a térképen. A ciklus addig folytatódik, ameddig a 
+            az argumentumlista 4 elemének értéket tud adni. Ugyanis a <function>sscanf</function> sikeres beolvasás esetén a 
+            helyesen "kitöltött" elemek számát adja vissza.   
+        </para>
+    </section>        
+        
+    <section>
+        <title>SamuCam</title>
+        <para>
+            Mutassunk rá a webcam (pl. Androidos mobilod) kezelésére ebben a projektben:
+            <link xlink:href="https://github.com/nbatfai/SamuCam">https://github.com/nbatfai/SamuCam</link>  
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+    </section>        
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+    <section>
+        <title>BrainB</title>
+        <para>
+            Mutassuk be a Qt slot-signal mechanizmust ebben a projektben: <link xlink:href="https://github.com/nbatfai/esporttalent-search">https://github.com/nbatfai/esporttalent-search</link>
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <caution>
+            <title>Szükséges csomag</title>
+            <para>
+                <programlisting>sudo apt install libopencv-dev</programlisting>
+            </para>
+        </caution>
+        <para>
+            Ez a program a karakter-elvesztést vizsgálja. Rajta kell tartani az
+            egeret <varname>Samu Entropy</varname>-n, eközben egyre több a négyzetek száma a képernyőn. A program bezárása után egy értékelést láthatunk.            
+        </para>
+        <para>
+            A Qt egy alkalmazás-keretrendszer, mely lehetővé teszi GUI-s alkalmazások készítését,
+            de hagyományos parancssoros alkalmazásokat is fejleszthetünk vele.
+        </para>
+        <para>
+            Grafikus felületek fejlesztésekor elvárás, hogy egyes elemeken végrehajtott interakciók, más elemeken fejtsék ki hatásukat. 
+            A Qt egy új mechanizmust vezetett be, mely a signal-slot. Például, ha megnyomunk egy gombot, az egy
+            signalt vált ki, melynek hatására a vele összekapcsolt objektum egyik slotját hajtja végre.
+            Ha megnézzük a BrainB program forrását, akkor láthatjuk, hogyan is néz ez ki.
+            <programlisting language="c++"><![CDATA[
+connect ( brainBThread, SIGNAL ( heroesChanged ( QImage, int, int ) ),
+    this, SLOT ( updateHeroes ( QImage, int, int ) ) ); ]]>
+            </programlisting>
+            Látható, hogy melyik a signal és melyik a slot.
+        </para>
+        <para>
+            A signal-ok olyan 
+            függvényeknek tekinthetőek, amik nem rendelkeznek definícióval, csak deklarációval. Nem lehet visszatérési értéke, viszont lehetnek paramétereik.
+            Fontos tulajdonságuk a signal-oknak, hogy nem lehet őket hagyományos módon meghívni, ehhez <function>emit</function> makrót kell használni.
+            <programlisting>
+                emit mysignal(value);
+            </programlisting>
+            A slot-ok ezzel szemben teljes mértékben a függvényekre hasonlítanak, meg lehet őket hívni, mint a függvényeket, van definíciójuk, lehetnek paramétereik, viszont ezeknek
+            sem lehet visszatérési értékük. Fontos, hogy csak olyan signal-slot párokat tudunk összekötni, melyek kompatiblisek egymással. Ez alatt azt kell érteni, hogyha a signal
+            paramétere 2 db egész, akkor a slot-nak vagy nem szabad lennie paraméterének, vagy pedig azonos paramétereket kell kérnie. Ez azért fontos, mert a signal paramétereinek 
+            értékei át tudnak adódni a slot-nak.
+        </para>
+        <para>
+            A Qt által biztosított osztályok mind tartalmaznak beépített signal-okat és slot-okat. 
+            Ha egyedi megoldásokat is használni akarunk, akkor 
+            készíthetünk leszármazott osztályokat. Ha olyan osztályt akarunk készíteni, ami képes kezelni a signal-slot mechanizmust, akkor mindenképpen 
+            tartalmaznia kell az osztálynak a <function>Q_OBJECT</function> makrót. Egy pontosítás még szükséges, ugyanis csak akkor lehet ezt a makrót
+            használni, ha az osztályunk őse a <classname>QObject</classname> osztály, vagy a ős osztályunk leszármazottja a <classname>QObject</classname>
+            osztálynak. A Qt összes saját osztálya leszármazottja ennek az osztálynak, tehát csak az általunk készített osztályokkal kell figyelni erre a kitételre.
+        </para>
+        <para>
+            Ha programunk fejlesztése során szükségünk lenne sablon osztályokra, akkor érdemes megismekedni a Woboq GmbH által fejlesztett Verdigris 
+            projektel (<link xlink:href="https://github.com/woboq/verdigris">https://github.com/woboq/verdigris</link>). A templatelt osztályok támogatása mellett 
+            gyorsabb fordítási időt érhetünk el, és programunk működése is egy kicsit gördülékenyebb lesz.
+        </para>
+        <para>
+            Végül megnézzük, hogy mire is használjuk a signal-slot mechanizmust a BrainB-ben.
+            <programlisting language="c++"><![CDATA[
+connect ( brainBThread, SIGNAL ( heroesChanged ( QImage, int, int ) ),
+    this, SLOT ( updateHeroes ( QImage, int, int ) ) );
+
+connect ( brainBThread, SIGNAL ( endAndStats ( int ) ),
+    this, SLOT ( endAndStats ( int ) ) );]]>
+            </programlisting>
+            A BrainB-ben két fő osztályunk van, az egyik az ablak, és az abban lévő objektumok mejelenítéséért felel, meg a számításokért. Az első <function>connect</function>
+            függvénynél azt láthatjuk, hogy ha megváltozik a hősünk száma/pozíciója, akkor a <varname>brainBThread</varname> objektum <function>heroesChanged</function> signal-ja 
+            kiváltódik, ehhez hozzákötjük az ablakunkat kezelő osztály <function>updateHeroes</function> slot-ját. Ezzel érjük el azt, hogy minden a számítási osztály által végzett módosulás
+            láthatóvá váljon a képernyőn. A másik <function>connect</function> pedig azt teszi lehetővé, hogyha  leállítjuk a programot, akkor záródjon be az ablak. 
+        </para>
+    </section>        
+
+    <section>
+        <title>OSM térképre rajzolása</title>
+        <para>
+            Debrecen térképre dobjunk rá cuccokat, ennek mintájára, ahol én az országba helyeztem el a DEAC
+            hekkereket: <link xlink:href="https://www.twitch.tv/videos/182262537">https://www.twitch.tv/videos/182262537</link> (de az OOCWC Java Swinges
+            megjelenítőjéből: <link xlink:href="https://github.com/nbatfai/robocar-emulator/tree/master/justine/rcwin">https://github.com/nbatfai/robocar-emulator/tree/master/justine/rcwin</link> is
+            kiindulhatsz, mondjuk az komplexebb, mert ott időfejlődés is van...)
+        </para>
+        <para>
+            Alternatívaként készíthetsz egy GoogleMaps alapú Androidos „GPS trackert”, 2007 óta csinálok ilyen példát:
+            <link xlink:href="https://youtu.be/QStgBZ6JfAU">https://youtu.be/QStgBZ6JfAU</link> az aktuális a Bátfai Haxor Stream keretében:
+            <link xlink:href="https://bhaxor.blog.hu/2018/09/19/nandigps_ismerkedes_a_gps-el">https://bhaxor.blog.hu/2018/09/19/nandigps_ismerkedes_a_gps-el</link>
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+    </section> 
+
+    <section>
+        <title>EPAM: XML feldolgozás</title>
+        <para>
+            Adott egy koordinátákat és államokat tartalmazó XML (kb 210ezer sor), ezt az XML-t feldolgozva
+        szeretnék létrehozni egy SVG fájlt, melyben minden város megjelenik egy pont formájában az adott
+        koordináták alapján (tetszőleges színnel)
+        Plusz feladat: A városokat csoportosíthatjuk államok szerint, és minden állam külön színnel jelenjen
+        meg a térképen, így látszódni fognak a határok is.
+        </para>
+    </section>  
+
+    <section>
+        <title>EPAM: ASCII Art</title>
+        <para>
+            ASCII Art in Java! Implementálj egy Java parancssori programot, ami beolvas egy képet és kirajzolja
+        azt a parancssorba és / vagy egy szöveges fájlba is ASCII karakterekkel.
+        </para>
+    </section>  
+
+    <section>
+        <title>EPAM: Titkos üzenet, száll a gépben!</title>
+        <para>
+            Implementájl egy olyan parancssori alkalmazást, amely a billentyűzetről olvas soronként ASCII
+        karakterekből álló sorokat, és a beolvasott szöveget Caesar kódolással egy txt fájlba írja soronként.
+        </para>
+    </section>       
+
+</chapter>                

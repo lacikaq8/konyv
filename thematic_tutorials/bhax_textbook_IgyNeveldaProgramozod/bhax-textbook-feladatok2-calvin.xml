@@ -1,0 +1,365 @@
+<chapter xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" version="5.0" xml:lang="hu">
+    <info>
+        <title>Helló, Calvin!</title>
+        <keywordset>
+            <keyword/>
+        </keywordset>
+    </info>
+
+    <section>
+        <title>MNIST</title>
+        <para>
+            Az alap feladat megoldása, +saját kézzel rajzolt képet is ismerjen fel,
+            <link xlink:href="https://progpater.blog.hu/2016/11/13/hello_samu_a_tensorflow-bol">https://progpater.blog.hu/2016/11/13/hello_samu_a_tensorflow-bol</link> Háttérként ezt vetítsük le:
+            https://prezi.com/0u8ncvvoabcr/no-programming-programming/
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            A MNIST egy olyan program ami adatbázisból való tanítás után
+            felismeri a kézzel írott számokat.  A programohoz Python-t és az ehhez
+            szükséges Tensorflow library-t használjuk. A Tensorflow az adatfolyam programozáshoz
+            kínál nekünk lehetőségket. Az adatfolyam programozásban az egyes programrészeket, mint
+            irányított gráfok értelmezzük és ezek között pedig adatfolyamok áramlanak.
+        </para>
+        <para>
+            A programban deklarálunk egy függvényt a saját 8-ast ábrázoló képünk beolvasására. A
+            file változóba a read_file() függgvénnyel olvassuk be a képet, majd a decode_png()
+            függvénnyel, ezt dekódoljuk unit8-as vagy 16-os
+            tensorrá.
+            <programlisting>
+                def readimg():
+                file = tf.io.read_file("sajat8a.png")
+                img = tf.image.decode_png(file,channels=1)
+                return img
+            </programlisting>
+            A main függvényben beolvassuk az MNIST adabázis képeit majd létrehozunk egy modellt. 
+            A modell tensor-okból áll amik, olyan adatszerkezetek, amik (ebben az esetben) mátrixokat
+            tartalmaznak. A modellben az x egy Placeholder típusú tensor, ami akkor fog értéket
+            kapni, mielőtt a kód lefut. Ezután jön két változó típusú tensor, a W tartalmazza a
+            súlyokat, a b pedig a bias-t, tehát a hibás következetéseket. Az y ban vesszük az x és W
+            tensor mátrixszorzatát a matmul() függvénnyel, majd ehhez hozzáadjuk a b-t.
+            <programlisting>
+            mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
+                # Create the model
+                x = tf.placeholder(tf.float32, [None, 784])
+                W = tf.Variable(tf.zeros([784, 10]))
+                b = tf.Variable(tf.zeros([10]))
+                y = tf.matmul(x, W) + b
+            </programlisting>
+            A cross_entropy-ban vesszük a y logits-ok és y label-ök közötti keresztszorzatot, majd
+            ennek a tensor-nak az elemeinek számoljuk ki a dimenziók közötti átlagát a reduce_mean()
+            függvénnyel. Tanításnál ezt az átlagot próbáljuk minimalizálni a gradient descent
+            algoritmus segítségével. Ez a programban a train.GradientDescentOptimizer.minimize()
+            függvényként jelenik meg.
+            <programlisting>
+            cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=y,labels=y_))
+            train_step = tf.train.GradientDescentOptimizer(0.5).minimize(cross_entropy)
+            </programlisting>
+            Ezután elkezdjük a tanítást az MNIST képeivel egyszerre 100-at fog feldolgozni, és ezt a
+            lépést ismételjük meg 10-szer, és kiírjük hány százaléknál jár a tanítás.
+            <programlisting>
+            for i in range(1000):
+            batch_xs, batch_ys = mnist.train.next_batch(100)
+            sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
+            if i % 100 == 0:
+            print(i/10, "%")
+            </programlisting>
+            Végül teszteljük az adatázis 42. elemére ami egy 4-es, illetve a saját kezüleg rajzolt 8-asra is. 
+        </para>
+        <para>
+            A progpater-es forrás működéséhez néhány függvényt át kellett írni, mert depraceted-ek
+            voltak.
+        </para>
+        <para>
+            A kép dekódolásánál meg kellett adni egy channels=1 argumentumot, ez a színcsatornák
+            számát adja meg. Az érték 1 mert a kép szürkeárnyalatos.
+            <programlisting>
+                img = tf.image.decode_png(file,channels=1)
+            </programlisting>
+        </para>
+        <para>
+            A keresztszorzat létrehozásánál pedig a softmax_cross_entropy_with_logits függvénynél
+            argumentumként meg kellett adni a logits és labels értékeket.
+            <programlisting>
+            cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=y,labels=y_))
+            </programlisting>
+        </para>
+    </section>        
+
+    <section>
+        <title>Deep MNIST</title>
+        <para>
+            Mint az előző, de a mély változattal. Segítő ábra, vesd össze a forráskóddal a
+            <link xlink:href="https://arato.inf.unideb.hu/batfai.norbert/NEMESPOR/DE/denbatfai2.pdf">https://arato.inf.unideb.hu/batfai.norbert/NEMESPOR/DE/denbatfai2.pdf</link> 8. fóliáját!
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+           <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            Ahhoz, hogy a program az új TensorFlow-val is működjön ki kell cserélnünk a legtöbb
+            függvény előtagját tf.compat.v1.-re, mivel ezek az új verzióban ebbe a modulba kerültek.
+        </para>
+        <para>
+            Ahhoz, hogy saját képet is felismerjen bele kellett írni az előző feladatban használt
+            readimg() függvényt, ami be fogja olvasni a saját képünket.
+            <programlisting>
+                def readimg():
+                file = tf.compat.v1.read_file("sajat8a.png")
+                img = tf.image.decode_png(file, 1)
+                return img
+            </programlisting>
+        </para>
+        <para>
+            Az alábbi függvénnyel pedig a beolvasott képet fogjuk átkonvertálni 28*28-as méretűre
+            és grayscale-re. Ez a paramatérekben is látszik az utolsó paraméter 1 amiért a képünk
+            grayscale, ha RGB színterű lenne akkor 3-at kéne megadni.
+            <programlisting>
+                with tf.name_scope('reshape'):
+                x_image = tf.reshape(x, [-1, 28, 28, 1])
+            </programlisting>
+        </para>
+        <para>
+            Létrehozzuk a súlyokat és a biast tartalmazó Tensorokat, az első rétegben itt a
+            képünkből 32 képet készít a program.
+            <programlisting>  
+                with tf.name_scope('conv1'):
+                W_conv1 = weight_variable([5, 5, 1, 32])
+                b_conv1 = bias_variable([32])
+                h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
+            </programlisting>
+        </para>
+        <para>
+            A második rétegben 32 képre még helyezünk 64 filtert ami által kapunk egy 32x64 képet.
+        </para>
+        <para>
+            Ezek után fog átmenni két teljesen kapcsolt rétegen ahol a súlyokat és biast
+            beállítjuk, majd ezután történik a klasszifikáció tehát felismeri a képet.
+        </para>
+        <para>
+            Az első feladat példájához hasonlóan is  beolvassuk a mintaképeket, majd létehozunk
+            egy modellt. Létrehozunk egy keresztszorzatot a logits és labels elemek között, majd
+            ezeknek az átlagát vesszük. Az optimalizálás során most az Adam algoritmust használjuk a
+            GradientDescent helyett.
+            <programlisting>  
+            # Import data
+            tf.compat.v1.disable_eager_execution()
+            mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
+
+            # Create the model
+            x = tf.compat.v1.placeholder(tf.float32, [None, 784])
+
+            # Define loss and optimizer
+            y_ = tf.compat.v1.placeholder(tf.float32, [None, 10])
+
+            # Build the graph for the deep net
+            y_conv, keep_prob = deepnn(x)
+
+            with tf.name_scope('loss'):
+            cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=y_,logits=y_conv)
+            cross_entropy = tf.reduce_mean(cross_entropy)
+
+            with tf.name_scope('adam_optimizer'):
+            train_step = tf.compat.v1.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+            </programlisting>
+        </para>
+        <para>
+            Ezt követi a tanítás. A tanítás során 20000 mintaképet használunk és ezeket 50-essével
+            olvassuk be. Illetve 100 képenként kiírjuk hány képet olvasott már be a program és hány
+            százalékos a pontosság. Ez a verzió a sima MNIST-nél 20-szor több mintával dolgozik,
+            ezért sokkal pontosabb de a tanítás is jóval több időt igényel.
+            <programlisting>  
+            with tf.compat.v1.Session() as sess:
+            sess.run(tf.compat.v1.global_variables_initializer())
+            for i in range(20000):
+            batch = mnist.train.next_batch(50)
+            if i % 100 == 0:
+            train_accuracy = accuracy.eval(feed_dict={
+            x: batch[0], y_: batch[1], keep_prob: 1.0})
+            print('step %d, training accuracy %g' % (i, train_accuracy))
+            train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+
+            print('test accuracy %g' % accuracy.eval(feed_dict={
+            x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
+            </programlisting>
+        </para>
+
+    </section>        
+        
+    <section>
+        <title>
+            <emphasis role="cadiumgreen">CIFAR-10</emphasis>
+        </title>
+        <para>
+            Az alap feladat megoldása, +saját fotót is ismerjen fel,
+            <link xlink:href="https://progpater.blog.hu/2016/12/10/hello_samu_a_cifar-10_tf_tutorial_peldabol">https://progpater.blog.hu/2016/12/10/hello_samu_a_cifar-10_tf_tutorial_peldabol</link>
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+           <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+    </section>        
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+    <section>
+        <title>Android telefonra a TF objektum detektálója</title>
+        <para>
+            Telepítsük fel, próbáljuk ki!
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+           <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+        <para>
+            A feladat az volt, hogy próbáljuk a ki a TensorFlow objektum detektáló appját
+            androidra. Ehhez először le kell klónozni a TensorFlow android-os repóját a következő linkről: 
+            <link xlink:href="https://github.com/tensorflow/examples/tree/master/lite/examples/object_detection/android">https://github.com/tensorflow/examples/tree/master/lite/examples/object_detection/android</link>.
+        </para>
+        <para>
+            Majd Android Studioba beimportálni és ott build-elni belőle egy .apk fájlt amit
+            ezután telepíthetünk az Androidos telefonra. Ehhez a  build.gradel fájlban a
+            nativeBuildSystem-et át kell írnunk 'bazel'-ről 'none'-ra. Illetve a gradle/wrapper
+            mappán belül a gradle-wrapper.properties fájlban a distributionUrl értéket át kell
+            írnunk egy újabb verziójúra.
+        </para>
+        <para>
+            Ha nem szeretnénk magunknak build-elni van lehetőség már kész appot is letölteni. A
+            program viszonylag jól működött állatokat, informatikai eszközöket gond nélkül
+            felismert. 
+        </para>
+    </section>        
+
+    <section>
+        <title>SMNIST for Machines</title>
+        <para>
+            Készíts saját modellt, vagy használj meglévőt, lásd: <link xlink:href="https://arxiv.org/abs/1906.12213">https://arxiv.org/abs/1906.12213</link>
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+           <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+    </section>        
+
+    <section>
+        <title>Minecraft MALMO-s példa</title>
+        <para>
+            A <link xlink:href="https://github.com/Microsoft/malmo">https://github.com/Microsoft/malmo</link> felhasználásával egy ágens példa, lásd pl.:
+        </para>
+        <para>
+            <link xlink:href="https://youtu.be/bAPSu3Rndi8">https://youtu.be/bAPSu3Rndi8</link>,
+        </para>
+        <para>
+            <link xlink:href="https://bhaxor.blog.hu/2018/11/29/eddig_csaltunk_de_innentol_mi">https://bhaxor.blog.hu/2018/11/29/eddig_csaltunk_de_innentol_mi</link>,
+        </para>
+        <para>
+            <link xlink:href="https://bhaxor.blog.hu/2018/10/28/minecraft_steve_szemuvege">https://bhaxor.blog.hu/2018/10/28/minecraft_steve_szemuvege</link>
+        </para>
+        <para>
+            Megoldás videó:
+        </para>
+        <para>
+            Megoldás forrása:                
+        </para>
+        <para>
+           <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
+        </para>
+    </section>    
+
+    <section>
+        <title>EPAM: Reaktív programozás</title>
+        <para>
+            Számoljuk ki az első 10 nem negatív egész szám összegét és áltagát.
+        </para>
+    </section>  
+
+    <section>
+        <title>EPAM: Back To The Future</title>
+        <para>
+            Adott az alábbi kódrészlet:
+            <programlisting language="java"><![CDATA[
+public class FutureChainingExercise {
+private static ExecutorService executorService = Executors.newFixedThreadPool(2);
+public static void main(String[] args) {
+CompletableFuture<String> longTask
+= CompletableFuture.supplyAsync(() -> {
+sleep(1000);
+return "Hello";
+}, executorService);
+CompletableFuture<String> shortTask
+= CompletableFuture.supplyAsync(() -> {
+sleep(500);
+return "Hi";
+}, executorService);
+CompletableFuture<String> mediumTask
+= CompletableFuture.supplyAsync(() -> {
+sleep(750);
+return "Hey";
+}, executorService);
+CompletableFuture<String> result
+= longTask.applyToEitherAsync(shortTask, String::toUpperCase, executorService);
+result = result.thenApply(s -> s + " World");
+CompletableFuture<Void> extraLongTask
+= CompletableFuture.supplyAsync(() -> {
+sleep(1500);
+return null;
+}, executorService);
+result = result.thenCombineAsync(mediumTask, (s1, s2) -> s2 + ", " +
+s1, executorService);
+System.out.println(result.getNow("Bye"));
+sleep(1500);
+System.out.println(result.getNow("Bye"));
+result.runAfterBothAsync(extraLongTask, () -
+> System.out.println("After both!"), executorService);
+result.whenCompleteAsync((s, throwable) -> System.out.println("Complete: " +
+s), executorService);
+executorService.shutdown();
+}
+/**
+*
+* @param sleeptime sleep time in milliseconds
+*/
+private static void sleep(int sleeptime) {...}
+}
+        1]]>
+            </programlisting>
+            Mi lesz kiíratva a standard kimenetre és miért?
+        </para>
+    </section>  
+
+    <section>
+        <title>EPAM: AOP</title>
+        <para>
+            Készíts két példa projektet, melyben egyes metódusok futási idejét méred majd kiíratod úgy, hogy a metódus
+         futási idejének méréséhez AOP-t használsz. Az első projektben csak az AspectJ könyvtárat, a második
+        esetében pedig Spring AOP-t használj.
+        </para>
+    </section>     
+
+</chapter>                
