@@ -23,7 +23,7 @@
             A továbbiakban arról fogunk beszélni, hogy miért érdemes használni a hibakezelést és mit is csinál ez pontosan. 
         </para>
         <para>
-            A kivétel a program végrehatása során keletkezik, mely megszakítja az utsaítások végrehajtását.   
+            A kivétel a program végrehatása során keletkezik, mely megszakítja az utasítások végrehajtását.   
             A nem objektumorientált nyelvekben, mint a C, minden gyanús helyen külön kellett
             kezelnünk az egyes kivételeket, mely egy hibaüzenet kiírásából és a program leállításából állt. Ezzel szemben C++/Java-ban akár egy helyen is kezelhetjük őket. 
             Az alap szintaxisa a objektum orientált nyelvekben a kivételkezelésnek a következő:
@@ -266,7 +266,7 @@ public class LZWBinFaTest {
     
 }]]>           
             </programlisting>
-            Szintaktikailag egy normál Java osztályt látunk. A különlegességét az adja, hogy tartalmazza a <![CDATA[@Test]]> makrót, melyel jelöljük, hogy ezután 
+            Szintaktikailag egy normál Java osztályt látunk. A különlegességét az adja, hogy tartalmazza a <![CDATA[@Test]]> az egy annotációt, melyel jelöljük, hogy ezután 
             egy tesztelő függvényt definiálunk. Az <classname>LZWBinFaTest</classname> osztályban példányosítunk egy <classname>LZWBinFa</classname> típusú objektumot. 
             Majd a <function>testHozzarendel</function> függvény segítségével teszteljük, hogy a <function>hozzarendel</function> függvény megfelelően építi-e fel a fát.
             A <varname>minta</varname> tömbben eltároljuk a honlapon található mintát, majd maszkolás nélkül belerakjuk az 1-eseket és a 0-ákat a fába. Ha ezzel végeztünk, 
@@ -360,5 +360,14 @@ public class LZWBinFaTest {
             Adott az alábbi kódrészlet. Mi történik, ha az input változó 1F, “string” vagy pedig null? Meghívódik
         e minden esetben a finally ág? Válaszod indokold!
         </para>
+        <para>
+            Floatnál nem hívódik mert elsőnek alkapjuk a floatot visszaadunk egy child exceptiont amit elkap a catch childexception és visszaadja a parentexceptionjet amit elkap a kovetkező catch ami kiírja hogy elkapta és exit-el
+        </para>
+        <para>
+            Stringnél sem hívódik meg elkapjuk visszaadunk egy parentexceptiont amit instant elkap a parentexception-os catch és kilép
+        </para>
+        <para>
+            Nullnál meghívódik mert elsőnek kapunk egy runtimeexceptiont belőle amit csak a exception e fog elkapni és utánna lefutódik a finally
+        </para>
     </section> 
-</chapter>                
+</chapter>
