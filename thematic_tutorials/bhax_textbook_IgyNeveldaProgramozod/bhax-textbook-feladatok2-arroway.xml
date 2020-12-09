@@ -32,11 +32,6 @@ public class PolarGenerator
     boolean nincsTarolt = true;
     double tarolt;
     
-    public PolarGenerator()
-    {
-        nincsTarolt = true;
-    }
-    
     public double kovetkezo() 
     {
         if(nincsTarolt)

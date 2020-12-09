@@ -426,9 +426,9 @@ public class DefaultExampleImpl2 implements DefaultExample {
         <para>
             Mi a különbség Java-ban a Class, Abstract Class és az Interface között? Egy tetszőleges példával / példa kódon keresztül mutasd be őket és hogy mikor melyik koncepciót célszerű használni.
         </para>
-        <para>Interfész: -Minden metódus benne absztrakt. -Minden eleme public. Ha használni szeretnénk az interfészt akkor kreálnunk kell egyet majd a benne létrehozott absztract metódusokat definiálni kell a programban.</para>
+        <para>Interfész: -Metódusok benne absztrakt kivéve a default metódusok. -Minden eleme lehet private/public. Ha használni szeretnénk az interfészt akkor kreálnunk kell egyet majd a benne létrehozott absztract metódusokat definiálni kell a programban.</para>
         <para>Absztrak Osztály: -Tartalmazhat konkrét metódusokat. -Lehetnek benne a tagok public, private, protected és default. Örököltetünk kell a használatához.</para>
-        <para>Osztály: -Jellemzni a cselekvéseit és az attribútumait egy obijectumnak. -Absztract és konkrét metódusokat is tárolhat. -Lehet public, private, protected és default.</para>
+        <para>Osztály: -Jellemzni a cselekvéseit és az attribútumait egy obijectumnak. -Létrehozáskor lehet:Absztract(ha van egy absztract metódusa az osztálynak akkor csak absztract osztály lehet) vagy konkrét metódusokat tárol. -Lehet public, private, protected és default.</para>
         <programlisting language="java"><![CDATA[
                 public class Tester {
    public static void main(String[] args) {
