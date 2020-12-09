@@ -23,29 +23,28 @@
             <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
         </para>
         <para>
-            A MNIST egy olyan program ami adatbázisból való tanítás után
-            felismeri a kézzel írott számokat.  A programohoz Python-t és az ehhez
-            szükséges Tensorflow library-t használjuk. A Tensorflow az adatfolyam programozáshoz
-            kínál nekünk lehetőségket. Az adatfolyam programozásban az egyes programrészeket, mint
-            irányított gráfok értelmezzük és ezek között pedig adatfolyamok áramlanak.
+            Az MNIST egy olyan program mely egy előre elkészült kézzel rajzolt számok képadatbázisból
+            megtanítja magát hogy felismerje azokat.A program python nyelven írodott és a tensorflowra könyvtárhoz is szükségünk van
+            Mi is az a tensorflow? Google Brain team által létrehozott library melyben machine learning és deep learning modelleket és algoritmusokat találunk.
         </para>
         <para>
-            A programban deklarálunk egy függvényt a saját 8-ast ábrázoló képünk beolvasására. A
-            file változóba a read_file() függgvénnyel olvassuk be a képet, majd a decode_png()
-            függvénnyel, ezt dekódoljuk unit8-as vagy 16-os
-            tensorrá.
+            Elsőnek importáljuk a tanításhoz szükséges mintákat adatbázist.
+            <programlisting>
+            from tensorflow.examples.tutorials.mnist import input_data
+            </programlisting>
+            Elsőnek deklarálunk egy függvény mely majd beolvassa a custom képünket.A file abban adhatjuk meg
+            a custom képünk nevét. Majd a beadott képet dekódoljuk uint8 vagy uint16 ra.
             <programlisting>
                 def readimg():
-                file = tf.io.read_file("sajat8a.png")
+                file = tf.io.read_file("egytizes.png")
                 img = tf.image.decode_png(file,channels=1)
                 return img
             </programlisting>
-            A main függvényben beolvassuk az MNIST adabázis képeit majd létrehozunk egy modellt. 
-            A modell tensor-okból áll amik, olyan adatszerkezetek, amik (ebben az esetben) mátrixokat
-            tartalmaznak. A modellben az x egy Placeholder típusú tensor, ami akkor fog értéket
-            kapni, mielőtt a kód lefut. Ezután jön két változó típusú tensor, a W tartalmazza a
-            súlyokat, a b pedig a bias-t, tehát a hibás következetéseket. Az y ban vesszük az x és W
-            tensor mátrixszorzatát a matmul() függvénnyel, majd ehhez hozzáadjuk a b-t.
+            Most olvassuk be a képeket az <varname>x</varname> nem egy konkrét érték lesz hanem egy placehorder
+            jelen esetben a mi modellunk 2D-s lesz és 784 dimenziós vektorú. A <varname>w</varname> az egy variable tipusú ami
+            csak annyit jelenet hogy módosítható tensor és ez tárolja a súlyokat. <varname>b</varname> is variable tipusú csak ebben
+            az eltolási értéket tároljuk. <varname>y</varname>-ba összeszorozzuk a <varname>x</varname> <varname>w</varname> matrixokat (784x10)
+            és hozzadjuk a <varname>b</varname>-t így kapunk egy 10 dimenziójú vektort.
             <programlisting>
             mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
                 # Create the model
@@ -54,17 +53,26 @@
                 b = tf.Variable(tf.zeros([10]))
                 y = tf.matmul(x, W) + b
             </programlisting>
-            A cross_entropy-ban vesszük a y logits-ok és y label-ök közötti keresztszorzatot, majd
-            ennek a tensor-nak az elemeinek számoljuk ki a dimenziók közötti átlagát a reduce_mean()
-            függvénnyel. Tanításnál ezt az átlagot próbáljuk minimalizálni a gradient descent
-            algoritmus segítségével. Ez a programban a train.GradientDescentOptimizer.minimize()
-            függvényként jelenik meg.
+            Az <varname>y</varname>-ba fogjuk tárolni az általunk kiszámított
+            eloszlásokat, míg az <varname>y_</varname>-ban a valódi eloszlást.
+            <programlisting>
+            y_ = tf.placeholder(tf.float32, [None, 10])
+            </programlisting>
+            Ezután szükségünk lesz egy indicátorra hogy tesztelni tudjuk a modellt hogy mennyire rossz
+            a célunk az hogy ezt minimalizáljuk. A tf.nn.softmax_cross_entropy_with_logits kiszámolja a cross entropyt
+            <varname>y</varname> <varname>y_</varname> között. A tf.reduce_mean meg kiszámolja az átlagot.
+            tf.train.GradientDescentOptimizer használjuk hogy csökkentük az átlagos veszteséget 0.5 benne annyit adjatunk meg mekkora egységekkel közelítsük meg jelen esetben 0.5.
             <programlisting>
             cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=y,labels=y_))
             train_step = tf.train.GradientDescentOptimizer(0.5).minimize(cross_entropy)
             </programlisting>
-            Ezután elkezdjük a tanítást az MNIST képeivel egyszerre 100-at fog feldolgozni, és ezt a
-            lépést ismételjük meg 10-szer, és kiírjük hány százaléknál jár a tanítás.
+            Itt inicializálja változóinkat és elinítunk egy sessiont.
+            <programlisting >
+            sess = tf.InteractiveSession()
+            tf.initialize_all_variables().run(session=sess)
+            </programlisting>
+            Itt folyik maga a tanítás 1000x fut el és mindel alkalommal kiválaszt random 100 elemet az adatbázisból. Itt újra <varname>y_</varname> <varname>y</varname>
+            kiszámítjuk értékeket majd ezzel kiszámoljuk a átlagos vesztegéget és minimalizáljuk.
             <programlisting>
             for i in range(1000):
             batch_xs, batch_ys = mnist.train.next_batch(100)
@@ -72,25 +80,13 @@
             if i % 100 == 0:
             print(i/10, "%")
             </programlisting>
-            Végül teszteljük az adatázis 42. elemére ami egy 4-es, illetve a saját kezüleg rajzolt 8-asra is. 
-        </para>
-        <para>
-            A progpater-es forrás működéséhez néhány függvényt át kellett írni, mert depraceted-ek
-            voltak.
-        </para>
-        <para>
-            A kép dekódolásánál meg kellett adni egy channels=1 argumentumot, ez a színcsatornák
-            számát adja meg. Az érték 1 mert a kép szürkeárnyalatos.
+            Most hogy a tanítással megvagyunk teszteljük. tf.argmax megadja egy adott tengelyen a legnagyobb indexet és ha ez 2 megegyezik akkor helyesen tippeltünk.
+            A tf.cast átalakítja az igazságértékünket float 32-re.Ezután kiszámpljuk mennyire pontos a model.
             <programlisting>
-                img = tf.image.decode_png(file,channels=1)
-            </programlisting>
-        </para>
-        <para>
-            A keresztszorzat létrehozásánál pedig a softmax_cross_entropy_with_logits függvénynél
-            argumentumként meg kellett adni a logits és labels értékeket.
-            <programlisting>
-            cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=y,labels=y_))
-            </programlisting>
+            correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
+            accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))  
+            print("-- Pontossag: ", sess.run(accuracy, feed_dict={x: mnist.test.images,y_: mnist.test.labels}))   
+            </programlisting> 
         </para>
     </section>        
 
@@ -110,90 +106,92 @@
            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
         </para>
         <para>
-            Ahhoz, hogy a program az új TensorFlow-val is működjön ki kell cserélnünk a legtöbb
-            függvény előtagját tf.compat.v1.-re, mivel ezek az új verzióban ebbe a modulba kerültek.
+            Sima mnistel-el 90-92% pontosságokat kaptunk ami papíron elég jól néz ki de a valóságban ez az eredmény gyenge. Feladatunk ugyanaz mint az előzőbe csak a deep mnistbe kell megvalósítani
+            ami annyit jelent hogy pontosabb értékek létrehozásáért neurális hálókat is behozunk a programunkba.
         </para>
         <para>
-            Ahhoz, hogy saját képet is felismerjen bele kellett írni az előző feladatban használt
-            readimg() függvényt, ami be fogja olvasni a saját képünket.
+            Létrehozzuk deepnn-t ahol a képek átalakítjuk.
             <programlisting>
-                def readimg():
-                file = tf.compat.v1.read_file("sajat8a.png")
-                img = tf.image.decode_png(file, 1)
-                return img
-            </programlisting>
-        </para>
-        <para>
-            Az alábbi függvénnyel pedig a beolvasott képet fogjuk átkonvertálni 28*28-as méretűre
-            és grayscale-re. Ez a paramatérekben is látszik az utolsó paraméter 1 amiért a képünk
-            grayscale, ha RGB színterű lenne akkor 3-at kéne megadni.
-            <programlisting>
+                def deepnn(x):
                 with tf.name_scope('reshape'):
                 x_image = tf.reshape(x, [-1, 28, 28, 1])
             </programlisting>
-        </para>
-        <para>
-            Létrehozzuk a súlyokat és a biast tartalmazó Tensorokat, az első rétegben itt a
-            képünkből 32 képet készít a program.
-            <programlisting>  
+                <varname>W_conv1</varname> fogja tartalmazni a súlyokat melynek az alakja [5, 5, 1, 32] ebben az első kettő a kép alakját írja le a harmadik a bemeneti streamet 4. pedig ki streamet.
+                Így azt kaptuk hogy minden 5x5 képhez 32 db összeget fog kiszámítani. <varname>b_conv1</varname> tárolunk 32 bias-t. Majd összeszorozzuk az értékeinket, A tf.nn.relu az pedig ha negatív
+                értéke van 0 ad vissza ha pedig pozitív akkor magát a számot.
+            <programlisting>
                 with tf.name_scope('conv1'):
                 W_conv1 = weight_variable([5, 5, 1, 32])
                 b_conv1 = bias_variable([32])
                 h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
+
+                with tf.name_scope('pool1'):
+                h_pool1 = max_pool_2x2(h_conv1
             </programlisting>
-        </para>
-        <para>
-            A második rétegben 32 képre még helyezünk 64 filtert ami által kapunk egy 32x64 képet.
-        </para>
-        <para>
-            Ezek után fog átmenni két teljesen kapcsolt rétegen ahol a súlyokat és biast
-            beállítjuk, majd ezután történik a klasszifikáció tehát felismeri a képet.
-        </para>
-        <para>
-            Az első feladat példájához hasonlóan is  beolvassuk a mintaképeket, majd létehozunk
-            egy modellt. Létrehozunk egy keresztszorzatot a logits és labels elemek között, majd
-            ezeknek az átlagát vesszük. Az optimalizálás során most az Adam algoritmust használjuk a
-            GradientDescent helyett.
-            <programlisting>  
-            # Import data
-            tf.compat.v1.disable_eager_execution()
-            mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
-
-            # Create the model
-            x = tf.compat.v1.placeholder(tf.float32, [None, 784])
-
-            # Define loss and optimizer
-            y_ = tf.compat.v1.placeholder(tf.float32, [None, 10])
-
-            # Build the graph for the deep net
-            y_conv, keep_prob = deepnn(x)
-
-            with tf.name_scope('loss'):
-            cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=y_,logits=y_conv)
-            cross_entropy = tf.reduce_mean(cross_entropy)
-
-            with tf.name_scope('adam_optimizer'):
-            train_step = tf.compat.v1.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+                Mivel neurális hálót készítünk több mint egy rétegre lesz szükségünk. A második réteget az elsőből számoljuk ki. Itt már a súlyunk 32 bemenetet kap és 64-eset ad vissza. Szóval itt már minden 5x5 képhez 64 összeget számol ki.
+            <programlisting>
+                with tf.name_scope('conv2'):
+                W_conv2 = weight_variable([5, 5, 32, 64])
+                b_conv2 = bias_variable([64])
+                h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
+                with tf.name_scope('pool2'):
+                h_pool2 = max_pool_2x2(h_conv2)
             </programlisting>
-        </para>
-        <para>
-            Ezt követi a tanítás. A tanítás során 20000 mintaképet használunk és ezeket 50-essével
-            olvassuk be. Illetve 100 képenként kiírjuk hány képet olvasott már be a program és hány
-            százalékos a pontosság. Ez a verzió a sima MNIST-nél 20-szor több mintával dolgozik,
-            ezért sokkal pontosabb de a tanítás is jóval több időt igényel.
-            <programlisting>  
-            with tf.compat.v1.Session() as sess:
-            sess.run(tf.compat.v1.global_variables_initializer())
-            for i in range(20000):
-            batch = mnist.train.next_batch(50)
-            if i % 100 == 0:
-            train_accuracy = accuracy.eval(feed_dict={
-            x: batch[0], y_: batch[1], keep_prob: 1.0})
-            print('step %d, training accuracy %g' % (i, train_accuracy))
-            train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+                Ezután egy 1024 neuronból álló fc réteget adunk hozzá a modellhez itt fel is dolgozzuk az egész képet.
+                Kiszámoljuk a súlyokat és a biasokat majd a tf.reshape függvénnyel egy mátrixá alakítjuk a h.pool2-tőt. Majd ezt a mátrixot
+                megszorozzuk a <varname>w_fci</varname> mátrixal és hozzáadjuk a <varname>b_fc1</varname> mátrixot majd odaadjuk a tf.nn.relu-nak
+            <programlisting>
+                with tf.name_scope('fc1'):
+                W_fc1 = weight_variable([7 * 7 * 64, 1024])
+                b_fc1 = bias_variable([1024])
 
-            print('test accuracy %g' % accuracy.eval(feed_dict={
-            x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
+                h_pool2_flat = tf.reshape(h_pool2, [-1, 7*7*64])
+                h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)  
+            </programlisting>
+                Itt a fölösleges neuronokat eldobjuk és létrehozunk egy placeholdert.
+            <programlisting>
+                with tf.name_scope('dropout'):
+                keep_prob = tf.placeholder(tf.float32)
+                h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)  
+            </programlisting>
+                Ez lesz szoftmax réteg
+            <programlisting>
+                ith tf.name_scope('fc2'):
+                W_fc2 = weight_variable([1024, 10])
+                b_fc2 = bias_variable([10])
+
+                y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
+                return y_conv, keep_prob
+            </programlisting>
+                A conv2d 4D-s inputból és szűrőbből egy 2D-s konvolúciót számol ki és visszaadja.
+            <programlisting>
+                def conv2d(x, W):
+                """conv2d returns a 2d convolution layer with full stride."""
+                return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+    
+                def max_pool_2x2(x):
+                """max_pool_2x2 downsamples a feature map by 2X."""
+                return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
+                strides=[1, 2, 2, 1], padding='SAME')
+  
+            </programlisting>
+                Itt súly számolunk az alakból.A bias generálunk a shapeből.És az öreg readimg-be meg beolvassuk a saját képünket.
+            <programlisting>
+                def weight_variable(shape):
+  """weight_variable generates a weight variable of a given shape."""
+  initial = tf.compat.v1.truncated_normal(shape, stddev=0.1)
+  return tf.Variable(initial)
+
+
+def bias_variable(shape):
+  """bias_variable generates a bias variable of a given shape."""
+  initial = tf.constant(0.1, shape=shape)
+  return tf.Variable(initial)
+
+def readimg():
+  file = tf.compat.v1.read_file("asd4.png")
+  img = tf.image.decode_png(file, 1)
+  return img
             </programlisting>
         </para>
 
@@ -233,22 +231,48 @@
            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
         </para>
         <para>
-            A feladat az volt, hogy próbáljuk a ki a TensorFlow objektum detektáló appját
-            androidra. Ehhez először le kell klónozni a TensorFlow android-os repóját a következő linkről: 
-            <link xlink:href="https://github.com/tensorflow/examples/tree/master/lite/examples/object_detection/android">https://github.com/tensorflow/examples/tree/master/lite/examples/object_detection/android</link>.
+            Linkek:
+            <link xlink:href="https://developer.android.com/studio/run/device">Developer Optinok bekapcsolása</link>,
+            <link xlink:href="https://developer.android.com/studio">Android Studio</link>,
+            <link xlink:href="https://github.com/tensorflow/examples/tree/master/lite/examples/object_detection/android">tensorflow repó</link>.
         </para>
         <para>
-            Majd Android Studioba beimportálni és ott build-elni belőle egy .apk fájlt amit
-            ezután telepíthetünk az Androidos telefonra. Ehhez a  build.gradel fájlban a
-            nativeBuildSystem-et át kell írnunk 'bazel'-ről 'none'-ra. Illetve a gradle/wrapper
-            mappán belül a gradle-wrapper.properties fájlban a distributionUrl értéket át kell
-            írnunk egy újabb verziójúra.
+            Elöfeltételek:
         </para>
+        <itemizedlist>
+            <listitem>
+                <para>Kell az Android Studio</para>           
+            </listitem>
+            <listitem>
+                <para>Kell egy androidos készülék és fejlesztői környezet melyek min api 21-esek</para>           
+            </listitem>
+            <listitem>
+                <para>Android Studionak 3.2 vagy újabb verziójúnak kell lenni</para>           
+            </listitem>
+        </itemizedlist>
         <para>
-            Ha nem szeretnénk magunknak build-elni van lehetőség már kész appot is letölteni. A
-            program viszonylag jól működött állatokat, informatikai eszközöket gond nélkül
-            felismert. 
+            Építése:
         </para>
+        <itemizedlist>
+            <listitem>
+                <para>1. Nyissuk meg az android studiot és válaszuk ki a Open an existing Android Studio project</para>          
+            </listitem>
+            <listitem>
+                <para>2. válasszuk ki azt a mappát ahova leclonoltuk a TensorFlow Lite sample GitHub repót</para>           
+            </listitem>
+            <listitem>
+                <para>3. Ha megkérdezni akarunk e Gradle Sync nyumjunk ok-ra</para>           
+            </listitem>
+            <listitem>
+                <para>4. Ha hibákat ad ki hiányoznak key könyvtárak csak telepitsük azokat</para>           
+            </listitem>
+            <listitem>
+                <para>5. Csatlakoztassuk a telefonunkat a számítógéphez(készüléken be kell kapcsolni a developer optiont) </para>           
+            </listitem>
+            <listitem>
+                <para>6. Futassuk :) </para>           
+            </listitem>
+        </itemizedlist>
     </section>        
 
     <section>
@@ -290,6 +314,52 @@
         <para>
            <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
         </para>
+        <para>
+            Minecraft MALMO egy minecraft amibe lehet pyhton c, c++, és java kóddal irányítani a karaktert es alakítani a világot főleg AI fejlesztésre használják. Ezeken
+            kívül készíthtünk mission-öket az elobb felsorolt programozasi nyelveken.
+        </para>
+        <para>Windows-on való telepítése:</para>
+        <para>Előszer 3 dolog kell: JDK 8.0 telepítése ,Python 3.6 telepít, zip letöltése és kicsomagolása</para>
+        <para>2 módszer van a letöltésre</para>
+        <para>Githubról letöltjük az egész mappát</para>
+        <para>Vagy powershellbe bizonyos parancsokkal</para>
+        <para>2-es módszernél telepítéséhez ezeket kell beírni</para>
+        <programlisting>
+            <![CDATA[
+            Set-ExecutionPolicy -Scope CurrentUser Unrestricted | Engedélyezzük a powershellnek külsős progok telepítését
+            cd ahova kicsomagoltad\Malmo-0.35.6-Windows-64bit_Python3.6\scripts
+            .\malmo_install.ps1
+            ]]>
+        </programlisting>
+        <para>Ezzel kész is minecraft elindításához ezt kell beírni</para>
+        <programlisting>
+            <![CDATA[
+            cd ahol ki lett csomagolva\Malmo-0.37.0-Windows-64bit_withBoost_Python3.6\Minecraft
+            .\launchclient
+            ]]>
+        </programlisting>
+        <para>Ezzel el is indul a minecraft nem kell várni hogy a számláló 100% üssön 95% már indul és sose éri el a 100-at</para>
+        <para>És mondjuk egy missiont akarunk indítani python nyelvben</para>
+        <programlisting>
+            <![CDATA[
+            cd ahol ki lett csomagolva\Malmo-0.37.0-Windows-64bit_withBoost_Python3.6\Python_Examples
+            python tutorial_1.py
+            ]]>
+        </programlisting>
+        <para>Ezzel letesz minket a jaték egy szerver alapu világba és 10 másodpercig egyhelyben állunk ennél vannak izgalmasabb küldetések is 
+        de csak eddig jutottam</para>
+        <para>Pár alap parancs</para>
+        <programlisting>
+            <![CDATA[
+            !! az 1 az truera állítja így folyamatosan csinálja a 0 falsera azzal leállítjuk.
+            agent_host.sendCommand("turn -0.5") | fordulás
+            agent_host.sendCommand("move 1") | előre mozgás 
+            agent_host.sendCommand("jump 1") | ugrás
+            agent_host.sendCommand("pitch 1") | sötétség
+            time.sleep(1) | alvás
+            agent_host.sendCommand("attack 1") | támadás
+            ]]>
+        </programlisting>
     </section>    
 
     <section>
