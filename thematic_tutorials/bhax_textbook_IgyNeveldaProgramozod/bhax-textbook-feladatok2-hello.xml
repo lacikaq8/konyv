@@ -76,6 +76,143 @@ while ( std::sscanf ( data+nn, "<OK %d %u %u %u>%n", &idd, &f, &t, &s, &n ) == 4
         <para>
             <emphasis role="strong">Tanulságok, tapasztalatok, magyarázat...</emphasis>
         </para>
+        <caution>
+            <title>OpenCV telepítése</title>
+            <para>
+                <programlisting>sudo apt install libopencv-dev</programlisting>
+            </para>
+        </caution>
+        <para>
+            A feladat arról szól, hogy az OpenCV segítségével hogyan tudjuk kezelni a webkameránkat, és annak adatait feldolgozni.
+            Ha rendelkezünk webkamerával, akkor érdemes telepíteni a <function>Motion</function> alkalmazást, mely segítségével egy 
+            webkamera servert indíthatsz a géped 8081-es portján. Részletes leírásért lásd: <link xlink:href="https://www.maketecheasier.com/setup-motion-detection-webcam-ubuntu/">https://www.maketecheasier.com/setup-motion-detection-webcam-ubuntu/</link>
+            Ha viszont nincs webkameránk, akkor a telefon kameráját fogjuk használni. Ehhez le kell tölteni az <function>IP Webcam</function> alkalmazást.
+            A két módszer közül bármelyiket is választjuk, a forrásban a következő részt módosítani kell a megfelelő IP címre:
+            <programlisting language="c++"><![CDATA[
+//main.cpp
+int main ( int argc, char** argv )
+{
+    ...
+
+    QCommandLineOption webcamipOption ( QStringList() << "ip" << "webcamip",
+                                        QCoreApplication::translate ( "main", "Specify IP address of your IP webcam app on Android phone (default is http://192.168.0.18:8080/video?x.mjpeg)." ),
+                                      QCoreApplication::translate ( "main", "webcamip" ), "http://192.168.0.100:8080/video?x.mjpeg" ); //itt kell módosítani.
+
+    ...
+}]]>
+            </programlisting>
+            Emellett még szükség lesz a <filename>lbpcascade_frontalface.xml</filename> fájlra, mely a <link xlink:href="https://github.com/Itseez/opencv/tree/master/data/lbpcascades">https://github.com/Itseez/opencv/tree/master/data/lbpcascades</link>
+            oldalon érhető el. Ezt a projekt mappájába kell rakni, hogy megtalálj a program. 
+        </para>
+        <para>
+            Hozzá tudjunk férni a kameránk áltak biztosított adatokhoz, a <classname>cv::VideoCapture</classname> osztály van segítségünkre. Ahhoz, hogy megnyissuk a 
+            webkamera servere által biztosított felvételt, a <function>SamuCam::openVideoStream()</function> függvényt használjuk.
+            <programlisting language="c++"><![CDATA[
+void SamuCam::openVideoStream()
+{
+    videoCapture.open ( videoStream );
+
+
+    videoCapture.set ( CV_CAP_PROP_FRAME_WIDTH, width );
+    videoCapture.set ( CV_CAP_PROP_FRAME_HEIGHT, height );
+    videoCapture.set ( CV_CAP_PROP_FPS, 10 );
+}]]>
+            </programlisting>
+            Az <function>open</function> függvénynek paraméterül adhatjuk a kameránk számát, a nulla az alapértelmezett kamera, ami elérhető a gépen. De adhatunk meg 
+            videó fájlt vagy ahogy a <function>SamuCam</function> osztályban látható, IP címet is. A <function>set</function> függvénnyel pedig tulajdonságokat tudunk megadni a
+            <varname>videoCapture</varname> objektumunknak. Jelen esetben azt, hogy milyen méretben jelenítse meg a kameránk képét, és korlátozatjuk az FPS számot is.  
+        </para>
+        <para>
+            A program arcfelismerésen alapul, melyet a <classname>cv::CascadeClassifier</classname> osztály tesz lehetővé. Ez az osztály kifejezetten objektumok felismerését valósítja 
+            meg. Az xml fájlon keresztül adjuk meg neki, hogy milyen felimerést szeretnénk használni.  
+            Annyi a lényeg, hogyha a <varname>faceClassifier</varname>
+            objektum egy emberi arcot ismer fel a kamera képén, akkor arról készít egy másolatot, és megjeleníti a képernyőn. Lássuk a <classname>SamuCam</classname> osztály
+            <function>run</function> függvényét, melyben látható az arcfelimerés kezelése.
+            <programlisting language="c++"><![CDATA[
+void SamuCam::run()
+{
+
+    cv::CascadeClassifier faceClassifier;
+
+    std::string faceXML = "lbpcascade_frontalface.xml"; // https://github.com/Itseez/opencv/tree/master/data/lbpcascades
+
+    if ( !faceClassifier.load ( faceXML ) )
+    {
+        qDebug() << "error: cannot found" << faceXML.c_str();
+        return;
+    }
+
+    cv::Mat frame;
+
+    while ( videoCapture.isOpened() )
+    {
+
+        QThread::msleep ( 50 );
+        while ( videoCapture.read ( frame ) )
+        {
+
+            if ( !frame.empty() )
+            {
+
+                cv::resize ( frame, frame, cv::Size ( 176, 144 ), 0, 0, cv::INTER_CUBIC );
+
+                std::vector<cv::Rect> faces;
+                cv::Mat grayFrame;
+
+                cv::cvtColor ( frame, grayFrame, cv::COLOR_BGR2GRAY );
+                cv::equalizeHist ( grayFrame, grayFrame );
+
+                faceClassifier.detectMultiScale ( grayFrame, faces, 1.1, 4, 0, cv::Size ( 60, 60 ) );
+
+                if ( faces.size() > 0 )
+                {
+
+                    cv::Mat onlyFace = frame ( faces[0] ).clone();
+
+                    QImage* face = new QImage ( onlyFace.data,
+                                                onlyFace.cols,
+                                                onlyFace.rows,
+                                                onlyFace.step,
+                                                QImage::Format_RGB888 );
+
+                    cv::Point x ( faces[0].x-1, faces[0].y-1 );
+                    cv::Point y ( faces[0].x + faces[0].width+2, faces[0].y + faces[0].height+2 );
+                    cv::rectangle ( frame, x, y, cv::Scalar ( 240, 230, 200 ) );
+
+
+                    emit  faceChanged ( face );
+                }
+
+                QImage*  webcam = new QImage ( frame.data,
+                                                frame.cols,
+                                                frame.rows,
+                                                frame.step,
+                                                QImage::Format_RGB888 );
+
+                emit  webcamChanged ( webcam );
+
+            }
+
+            QThread::msleep ( 80 );
+
+        }
+
+        if ( ! videoCapture.isOpened() )
+        {
+            openVideoStream();
+        }
+
+    }
+
+}]]>
+            </programlisting>
+            A <function>while</function> ciklus tartalmáról fogunk néhány szót megejteni. Elsőnek szükségünk van egy 
+            <classname>cv::Mat</classname> osztályú objektumra. Ennek segítségével az egyes képkockákat egy többdimenziós tömbben tudjuk tárolni. 
+            A <function>while</function> ciklus törzse addig ismétlődik, ameddig a kamera meg van nyitva. Beolvassuk a <varname>frame</varname> tömb tartalmát, 
+            ha üres, akkor pedig beolvasunk a kamera képéről egy arcot. Ehhez a <function>detectMultiScale</function> függvényt használjuk, mely különböző méretű
+            objektumokat, jelen esetben arcokat képes felismerni, és egy vektorba négyzetek formájában adja vissza az eredményt. Majd ebből a vektorból 
+            kiolvassuk az első felismert ojektumot, azt képpé alakítjuk, és jelezzük, hogy megváltozott a kamera képe.
+        </para>
     </section>        
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
     <section>
